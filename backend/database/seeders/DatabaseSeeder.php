@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AssetAssignment;
+use App\Models\AttendancePunch;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Company;
@@ -38,11 +39,48 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // 2. Admin User
+        // 2. Core Users (RBAC)
         $admin = User::create([
             'tenant_id' => $tenant->id,
-            'name' => 'مدير النظام | System Admin',
+            'role' => 'SUPER_ADMIN',
+            'name' => 'مدير النظام التنفيذي | Super Admin',
             'email' => 'admin@hrsystem.com',
+            'password' => Hash::make('password123'),
+            'status' => 'ACTIVE',
+        ]);
+
+        $hrManager = User::create([
+            'tenant_id' => $tenant->id,
+            'role' => 'HR_MANAGER',
+            'name' => 'سارة القحطاني | HR Director',
+            'email' => 'hr@hrsystem.com',
+            'password' => Hash::make('password123'),
+            'status' => 'ACTIVE',
+        ]);
+
+        $payrollOfficer = User::create([
+            'tenant_id' => $tenant->id,
+            'role' => 'PAYROLL_OFFICER',
+            'name' => 'مسؤول الرواتب والعمليات | Payroll Officer',
+            'email' => 'payroll@hrsystem.com',
+            'password' => Hash::make('password123'),
+            'status' => 'ACTIVE',
+        ]);
+
+        $auditor = User::create([
+            'tenant_id' => $tenant->id,
+            'role' => 'AUDITOR',
+            'name' => 'مراقب الامتثال والحوكمة | Compliance Auditor',
+            'email' => 'auditor@hrsystem.com',
+            'password' => Hash::make('password123'),
+            'status' => 'ACTIVE',
+        ]);
+
+        $employeeUser = User::create([
+            'tenant_id' => $tenant->id,
+            'role' => 'EMPLOYEE',
+            'name' => 'عبدالله العتيبي | Senior Engineer',
+            'email' => 'employee@hrsystem.com',
             'password' => Hash::make('password123'),
             'status' => 'ACTIVE',
         ]);
@@ -168,6 +206,7 @@ class DatabaseSeeder extends Seeder
             'branch_id' => $riyadhBranch->id,
             'department_id' => $techDept->id,
             'designation_id' => $devRole->id,
+            'user_id' => $employeeUser->id,
             'employee_number' => 'EMP-SA-001',
             'first_name' => 'عبدالله',
             'middle_name' => 'سعد',
@@ -252,6 +291,7 @@ class DatabaseSeeder extends Seeder
             'branch_id' => $riyadhBranch->id,
             'department_id' => $hrDept->id,
             'designation_id' => $hrRole->id,
+            'user_id' => $hrManager->id,
             'employee_number' => 'EMP-SA-002',
             'first_name' => 'سارة',
             'middle_name' => 'محمد',
@@ -531,6 +571,50 @@ class DatabaseSeeder extends Seeder
             'unpaid_leave_deductions' => 0.00,
             'other_deductions' => 0.00,
             'net_pay' => 17696.25,
+        ]);
+
+        // 14. Seed Attendance Punches (Biometric & Mobile GPS)
+        $today = now()->toDateString();
+        AttendancePunch::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $saudiEmp->id,
+            'punch_time' => $today . ' 08:55:00',
+            'punch_type' => 'IN',
+            'source' => 'BIOMETRIC_ADMS',
+            'device_serial' => 'ZKT-BIO-RIYADH-01',
+            'is_within_geofence' => true,
+        ]);
+
+        AttendancePunch::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $saudiEmp->id,
+            'punch_time' => $today . ' 17:30:00',
+            'punch_type' => 'OUT',
+            'source' => 'BIOMETRIC_ADMS',
+            'device_serial' => 'ZKT-BIO-RIYADH-01',
+            'is_within_geofence' => true,
+        ]);
+
+        AttendancePunch::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $egyEmp->id,
+            'punch_time' => $today . ' 09:12:00',
+            'punch_type' => 'IN',
+            'source' => 'MOBILE_GPS',
+            'latitude' => 30.0755,
+            'longitude' => 31.0206,
+            'is_within_geofence' => true,
+        ]);
+
+        AttendancePunch::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $egyEmp->id,
+            'punch_time' => $today . ' 18:05:00',
+            'punch_type' => 'OUT',
+            'source' => 'MOBILE_GPS',
+            'latitude' => 30.0754,
+            'longitude' => 31.0205,
+            'is_within_geofence' => true,
         ]);
     }
 }

@@ -50,13 +50,14 @@ class ApiClient {
 
   // Authentication
   public auth = {
-    login: async (credentials: { email: string; password: string }) => {
-      const data = await this.request<{ access_token: string; user: any; tenant: any }>('/auth/login', {
+    login: async (credentials: { email: string; password: string; subdomain?: string }) => {
+      const data = await this.request<any>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
-      if (typeof window !== 'undefined' && data.access_token) {
-        localStorage.setItem('hr_token', data.access_token);
+      const token = data?.data?.token || data?.token || data?.access_token;
+      if (typeof window !== 'undefined' && token) {
+        localStorage.setItem('hr_token', token);
       }
       return data;
     },
@@ -354,6 +355,99 @@ class ApiClient {
     downloadCertificate: (certId: string) => {
       const url = `${API_BASE_URL}/documents/certificates/${certId}/download`;
       window.open(url, '_blank');
+    },
+  };
+
+  // Offboarding & End of Service Award (ESB)
+  public offboarding = {
+    calculateEsb: async (payload: {
+      last_full_salary: number;
+      service_years: number;
+      separation_reason: string;
+      is_female?: boolean;
+    }) => {
+      return this.request<{ success: boolean; data: any }>('/offboarding/esb/calculate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    clearanceStatus: async (employeeId: string) => {
+      return this.request<{ success: boolean; data: any }>(`/offboarding/clearance/${employeeId}`);
+    },
+    initiate: async (payload: {
+      employee_id: string;
+      separation_date: string;
+      separation_reason: string;
+      notes?: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/offboarding/initiate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Executive Reports & Statutory Compliance
+  public reports = {
+    saudization: async (companyId?: string) => {
+      const q = companyId ? `?company_id=${companyId}` : '';
+      return this.request<{ success: boolean; data: any }>(`/reports/saudization${q}`);
+    },
+    egyptianization: async (companyId?: string) => {
+      const q = companyId ? `?company_id=${companyId}` : '';
+      return this.request<{ success: boolean; data: any }>(`/reports/egyptianization${q}`);
+    },
+    bradfordFactor: async (employeeId?: string) => {
+      const q = employeeId ? `?employee_id=${employeeId}` : '';
+      return this.request<{ success: boolean; data: any }>(`/reports/bradford-factor${q}`);
+    },
+    glJournal: async (runId: string) => {
+      return this.request<{ success: boolean; data: any }>(`/reports/payroll/${runId}/gl-voucher`);
+    },
+    headcount: async () => {
+      return this.request<{ success: boolean; data: any }>('/reports/headcount');
+    },
+  };
+
+  // Shift Rostering
+  public shifts = {
+    list: async () => {
+      return this.request<{ success: boolean; data: any[] }>('/shifts');
+    },
+    create: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/shifts', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Learning & Development
+  public learning = {
+    listCourses: async () => {
+      return this.request<{ success: boolean; data: any[] }>('/learning/courses');
+    },
+    getCourse: async (id: string) => {
+      return this.request<{ success: boolean; data: any }>(`/learning/courses/${id}`);
+    },
+    enroll: async (courseId: string, employeeId: string) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/learning/courses/${courseId}/enroll`, {
+        method: 'POST',
+        body: JSON.stringify({ employee_id: employeeId }),
+      });
+    },
+    issueCertificate: async (courseId: string, employeeId: string, score: number) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/learning/courses/${courseId}/certificate`, {
+        method: 'POST',
+        body: JSON.stringify({ employee_id: employeeId, score }),
+      });
+    },
+  };
+
+  // Organizational Chart
+  public orgChart = {
+    hierarchy: async () => {
+      return this.request<{ success: boolean; data: any }>('/org-chart/hierarchy');
     },
   };
 }

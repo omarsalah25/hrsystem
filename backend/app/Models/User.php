@@ -15,6 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id',
+        'role',
         'name',
         'email',
         'password',
@@ -47,5 +48,35 @@ class User extends Authenticatable
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Role-Based Access Control (RBAC) helpers
+     */
+    public function hasRole(string|array $roles): bool
+    {
+        $roleList = is_array($roles) ? $roles : explode(',', $roles);
+        $roleList = array_map('trim', $roleList);
+
+        if ($this->role === 'SUPER_ADMIN') {
+            return true; // Super admin has universal access
+        }
+
+        return in_array($this->role, $roleList, true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'SUPER_ADMIN';
+    }
+
+    public function isHrManager(): bool
+    {
+        return $this->role === 'HR_MANAGER' || $this->role === 'SUPER_ADMIN';
+    }
+
+    public function isPayrollOfficer(): bool
+    {
+        return $this->role === 'PAYROLL_OFFICER' || $this->role === 'SUPER_ADMIN';
     }
 }

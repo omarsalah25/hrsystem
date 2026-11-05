@@ -137,10 +137,21 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
+        $punches = AttendancePunch::where('employee_id', $employee->id)
+            ->whereDate('punch_time', '>=', now()->subDays(7))
+            ->orderBy('punch_time', 'desc')
+            ->get();
+
         return response()->json([
             'success' => true,
             'data' => [
+                'employee' => [
+                    'id' => $employee->id,
+                    'full_name' => $employee->full_name,
+                    'employee_number' => $employee->employee_number,
+                ],
                 'records' => $records,
+                'punches' => $punches,
                 'summary' => [
                     'present_days' => $records->where('status', 'PRESENT')->count(),
                     'late_days' => $records->where('late_minutes', '>', 0)->count(),

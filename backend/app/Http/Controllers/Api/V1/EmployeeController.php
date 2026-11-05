@@ -103,6 +103,8 @@ class EmployeeController extends Controller
             // 1. Create User account for employee
             $user = User::create([
                 'tenant_id' => $tenantId,
+                'role' => 'EMPLOYEE',
+                'name' => trim("{$validated['first_name']} {$validated['last_name']}"),
                 'email' => $validated['work_email'],
                 'password' => Hash::make(Str::random(12)),
                 'status' => 'ACTIVE',
