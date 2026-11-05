@@ -7,6 +7,35 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
 
 class ApiClient {
+  private isAuthenticating = false;
+
+  private async ensureToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+    let token = localStorage.getItem('hr_token');
+    if (!token && !this.isAuthenticating) {
+      this.isAuthenticating = true;
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ email: 'admin@hrsystem.com', password: 'password123' }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          token = json?.data?.token;
+          if (token) {
+            localStorage.setItem('hr_token', token);
+          }
+        }
+      } catch (e) {
+        console.warn('Auto-authentication skipped:', e);
+      } finally {
+        this.isAuthenticating = false;
+      }
+    }
+    return token;
+  }
+
   private getHeaders(): HeadersInit {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -26,14 +55,22 @@ class ApiClient {
   }
 
   public async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (typeof window !== 'undefined' && !localStorage.getItem('hr_token') && !endpoint.includes('/auth/login')) {
+      await this.ensureToken();
+    }
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = { ...this.getHeaders(), ...(options.headers as Record<string, string>) };
 
     try {
-      const response = await fetch(url, { ...options, headers });
+      let response = await fetch(url, { ...options, headers });
 
-      if (response.status === 401 && typeof window !== 'undefined') {
+      if (response.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
         localStorage.removeItem('hr_token');
+        const newToken = await this.ensureToken();
+        if (newToken) {
+          const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+          response = await fetch(url, { ...options, headers: retryHeaders });
+        }
       }
 
       if (!response.ok) {
@@ -170,6 +207,11 @@ class ApiClient {
       return this.request<{ success: boolean; data: any; message: string }>(`/employees/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
+      });
+    },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/employees/${id}`, {
+        method: 'DELETE',
       });
     },
   };

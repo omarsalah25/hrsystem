@@ -113,7 +113,7 @@ export default function EmployeesPage() {
   const [activeModalEmployee, setActiveModalEmployee] = useState<EmployeeItem | null>(null);
   const [employeesList, setEmployeesList] = useState<EmployeeItem[]>(sampleEmployees);
 
-  React.useEffect(() => {
+  const fetchEmployees = React.useCallback(() => {
     api.employees.list({ per_page: 'all' })
       .then((res: any) => {
         const rawItems = Array.isArray(res?.data)
@@ -132,7 +132,7 @@ export default function EmployeesPage() {
             dept: e.department?.name || 'تقنية المعلومات',
             role: e.designation?.title || 'مهندس برمجيات',
             branch: e.branch?.name || (e.company?.country_code === 'SAU' ? 'فرع الرياض' : 'فرع القاهرة'),
-            flag: e.company?.country_code === 'SAU' ? '🇸🇦' : '🇪🇬',
+            flag: e.company?.country_code === 'SAU' ? '🇸🇦' : e.company?.country_code === 'UAE' ? '🇦🇪' : '🇪🇬',
             status: e.employment_status || 'ACTIVE',
             salary: `${e.current_salary?.currency || (e.company?.country_code === 'SAU' ? 'SAR' : 'EGP')} ${(Number(e.current_salary?.base_salary || 18000) + Number(e.current_salary?.housing_allowance || 0)).toLocaleString()}`,
             hireDate: e.hire_date || '2023-01-15',
@@ -146,6 +146,24 @@ export default function EmployeesPage() {
         console.warn('Could not fetch real employees list, using defaults:', err);
       });
   }, []);
+
+  React.useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  const handleDeleteEmployee = async (id: string, name: string) => {
+    if (!confirm(locale === 'ar' ? `هل أنت متأكد من إنهاء خدمة الموظف (${name}) وإيقاف حسابه؟` : `Are you sure you want to offboard/deactivate employee ${name}?`)) {
+      return;
+    }
+    try {
+      await api.employees.delete(id);
+      setActiveModalEmployee(null);
+      fetchEmployees();
+      alert(locale === 'ar' ? 'تم إنهاء خدمة الموظف وتحديث حالته بنجاح.' : 'Employee offboarded successfully.');
+    } catch (err: any) {
+      alert(err.message || 'حدث خطأ أثناء إلغاء التفعيل');
+    }
+  };
 
   const filteredEmployees = employeesList.filter((emp) => {
     const matchesSearch =
@@ -269,9 +287,21 @@ export default function EmployeesPage() {
                     </span>
                   </td>
                   <td className="p-4">
-                    <button className="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-bold text-[11px] transition">
-                      {locale === 'ar' ? 'عرض الملف' : 'View'}
-                    </button>
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        onClick={() => setActiveModalEmployee(emp)}
+                        className="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-bold text-[11px] transition"
+                      >
+                        {locale === 'ar' ? 'عرض' : 'View'}
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                        className="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-bold text-[11px] transition"
+                        title={locale === 'ar' ? 'إنهاء الخدمة' : 'Offboard'}
+                      >
+                        {locale === 'ar' ? 'إيقاف' : 'Offboard'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -334,12 +364,20 @@ export default function EmployeesPage() {
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-              <button
-                onClick={() => router.push(`/employees/${activeModalEmployee.id}`)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-              >
-                {locale === 'ar' ? 'الانتقال إلى الملف الشامل 360°' : 'Go to Full 360° Profile'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push(`/employees/${activeModalEmployee.id}`)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                >
+                  {locale === 'ar' ? 'الانتقال إلى الملف الشامل 360°' : 'Go to Full 360° Profile'}
+                </button>
+                <button
+                  onClick={() => handleDeleteEmployee(activeModalEmployee.id, activeModalEmployee.name)}
+                  className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold transition"
+                >
+                  {locale === 'ar' ? 'إنهاء الخدمة / إيقاف' : 'Deactivate / Offboard'}
+                </button>
+              </div>
               <button
                 onClick={() => setActiveModalEmployee(null)}
                 className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"

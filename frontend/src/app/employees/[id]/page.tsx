@@ -32,25 +32,66 @@ export default function EmployeeProfilePage() {
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'salary' | 'attendance' | 'leaves' | 'assets' | 'okrs' | 'documents'>('profile');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>({
+    first_name: '',
+    last_name: '',
+    work_email: '',
+    phone_number: '',
+    allowed_attendance_mode: 'BOTH',
+    employment_status: 'ACTIVE',
+  });
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.employees.get(employeeId);
+      if (res && res.data) {
+        setEmployee(res.data);
+        setEditFormData({
+          first_name: res.data.first_name || '',
+          last_name: res.data.last_name || '',
+          work_email: res.data.work_email || '',
+          phone_number: res.data.phone_number || '',
+          allowed_attendance_mode: res.data.allowed_attendance_mode || 'BOTH',
+          employment_status: res.data.employment_status || 'ACTIVE',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load employee dossier:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [employeeId]);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const res = await api.employees.get(employeeId);
-        if (res && res.data) {
-          setEmployee(res.data);
-        }
-      } catch (err) {
-        console.error('Failed to load employee dossier:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
     if (employeeId) {
       loadData();
     }
-  }, [employeeId]);
+  }, [employeeId, loadData]);
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.employees.update(employee.id, editFormData);
+      setIsEditModalOpen(false);
+      await loadData();
+      alert('تم تحديث بيانات الموظف بنجاح.');
+    } catch (err: any) {
+      alert(err.message || 'حدث خطأ أثناء التحديث');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('هل أنت متأكد من إنهاء خدمة الموظف وتغيير حالته إلى OFFBOARDED؟')) return;
+    try {
+      await api.employees.delete(employee.id);
+      await loadData();
+      alert('تم إنهاء خدمة الموظف بنجاح.');
+    } catch (err: any) {
+      alert(err.message || 'حدث خطأ أثناء العملية');
+    }
+  };
 
   if (loading) {
     return (
@@ -156,6 +197,18 @@ export default function EmployeeProfilePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-xl flex items-center gap-2 transition"
+              >
+                <span>تعديل البيانات</span>
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold rounded-xl flex items-center gap-2 transition"
+              >
+                <span>إنهاء الخدمة</span>
+              </button>
               <button
                 onClick={() => api.documents.downloadCertificate(employee.id)}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl flex items-center gap-2 transition"
@@ -625,6 +678,106 @@ export default function EmployeeProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Edit Employee Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
+              تعديل بيانات الموظف ({employee.employee_number})
+            </h3>
+            <form onSubmit={handleUpdateSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">الاسم الأول</label>
+                  <input
+                    type="text"
+                    value={editFormData.first_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">اسم العائلة</label>
+                  <input
+                    type="text"
+                    value={editFormData.last_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, last_name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">البريد الإلكتروني المهني</label>
+                <input
+                  type="email"
+                  value={editFormData.work_email}
+                  onChange={(e) => setEditFormData({ ...editFormData, work_email: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">رقم الجوال</label>
+                <input
+                  type="text"
+                  value={editFormData.phone_number}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">نمط الحضور المسموح</label>
+                  <select
+                    value={editFormData.allowed_attendance_mode}
+                    onChange={(e) => setEditFormData({ ...editFormData, allowed_attendance_mode: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="BOTH">مزدوج (بصمة + محمول)</option>
+                    <option value="BIOMETRIC_ONLY">بصمة حيوية فقط</option>
+                    <option value="MOBILE_GEOFENCE_ONLY">محمول GPS فقط</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">الحالة الوظيفية</label>
+                  <select
+                    value={editFormData.employment_status}
+                    onChange={(e) => setEditFormData({ ...editFormData, employment_status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="ACTIVE">نشط (على رأس العمل)</option>
+                    <option value="ON_LEAVE">في إجازة</option>
+                    <option value="SUSPENDED">موقوف مؤقتاً</option>
+                    <option value="OFFBOARDED">منتهي الخدمة</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-sm"
+                >
+                  حفظ التعديلات
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

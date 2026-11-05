@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/employees/{employee}', [EmployeeController::class, 'show']);
         Route::post('/employees', [EmployeeController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::match(['put', 'patch'], '/employees/{employee}', [EmployeeController::class, 'update'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Attendance (Biometric & Mobile GPS Geofencing)
         Route::post('/attendance/punch', [AttendanceController::class, 'punch']);

@@ -224,7 +224,7 @@ class EmployeeController extends Controller
             'designation_id' => 'nullable|uuid|exists:designations,id',
             'branch_id' => 'nullable|uuid|exists:branches,id',
             'allowed_attendance_mode' => 'in:DEFAULT,BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH',
-            'employment_status' => 'in:ACTIVE,ON_LEAVE,SUSPENDED,TERMINATED',
+            'employment_status' => 'in:PROSPECT,ONBOARDING,PROBATIONARY,ACTIVE,ON_LEAVE,SUSPENDED,NOTICE_PERIOD,OFFBOARDED',
         ]);
 
         $employee->update($validated);
@@ -233,6 +233,25 @@ class EmployeeController extends Controller
             'success' => true,
             'message' => 'Employee details updated successfully',
             'data' => $employee->load(['department', 'designation', 'branch']),
+        ]);
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $employee = Str::isUuid($id)
+            ? Employee::findOrFail($id)
+            : Employee::where('employee_number', $id)->firstOrFail();
+
+        $employee->update(['employment_status' => 'OFFBOARDED']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Employee record deactivated and marked as OFFBOARDED successfully',
+            'data' => [
+                'id' => $employee->id,
+                'employee_number' => $employee->employee_number,
+                'employment_status' => $employee->employment_status,
+            ],
         ]);
     }
 }
