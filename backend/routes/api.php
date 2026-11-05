@@ -106,6 +106,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/recruitment/openings', [RecruitmentController::class, 'index']);
         Route::post('/recruitment/openings', [RecruitmentController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::get('/recruitment/openings/{id}', [RecruitmentController::class, 'show']);
+        Route::delete('/recruitment/openings/{id}', [RecruitmentController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::post('/recruitment/openings/{id}/applications', [RecruitmentController::class, 'storeApplication']);
         Route::patch('/recruitment/applications/{id}/stage', [RecruitmentController::class, 'updateStage'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::patch('/recruitment/applications/{id}/scorecard', [RecruitmentController::class, 'updateScorecard'])->middleware('role:SUPER_ADMIN,HR_MANAGER,DEPARTMENT_MANAGER');
@@ -115,11 +116,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/grievances', [GrievanceController::class, 'store']);
         Route::get('/grievances/{id}', [GrievanceController::class, 'show']);
         Route::patch('/grievances/{id}/status', [GrievanceController::class, 'updateStatus'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/grievances/{id}', [GrievanceController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Performance & OKR Goals
         Route::get('/performance/goals', [PerformanceController::class, 'index']);
         Route::post('/performance/goals', [PerformanceController::class, 'store']);
         Route::patch('/performance/goals/{id}/progress', [PerformanceController::class, 'updateProgress']);
+        Route::delete('/performance/goals/{id}', [PerformanceController::class, 'destroy']);
 
         // Cryptographic Hash-Chained Audit Trail
         Route::get('/audit/logs', [AuditController::class, 'index'])->middleware('role:SUPER_ADMIN,AUDITOR,HR_MANAGER');

@@ -392,6 +392,11 @@ class ApiClient {
         body: JSON.stringify(payload),
       });
     },
+    deleteOpening: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/recruitment/openings/${id}`, {
+        method: 'DELETE',
+      });
+    },
   };
 
   // Grievances & Employee Relations
@@ -415,6 +420,11 @@ class ApiClient {
         body: JSON.stringify(payload),
       });
     },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/grievances/${id}`, {
+        method: 'DELETE',
+      });
+    },
   };
 
   // Performance & OKRs
@@ -433,6 +443,11 @@ class ApiClient {
       return this.request<{ success: boolean; data: any; message: string }>(`/performance/goals/${id}/progress`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
+      });
+    },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/performance/goals/${id}`, {
+        method: 'DELETE',
       });
     },
   };
@@ -456,7 +471,7 @@ class ApiClient {
     },
     downloadCertificate: (certId: string) => {
       const url = `${API_BASE_URL}/documents/certificates/${certId}/download`;
-      window.open(url, '_blank');
+      window.open(url, '_blank')
     },
   };
 

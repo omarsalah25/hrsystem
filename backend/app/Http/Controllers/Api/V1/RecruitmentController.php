@@ -150,5 +150,16 @@ class RecruitmentController extends Controller
             'data' => $application,
         ]);
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $opening = JobOpening::findOrFail($id);
+        $opening->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Job opening deleted successfully',
+        ]);
+    }
 }
 

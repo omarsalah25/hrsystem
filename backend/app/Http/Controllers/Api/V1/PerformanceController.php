@@ -82,5 +82,16 @@ class PerformanceController extends Controller
             'data' => $goal,
         ]);
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $goal = OkrGoal::findOrFail($id);
+        $goal->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Goal deleted successfully',
+        ]);
+    }
 }
 

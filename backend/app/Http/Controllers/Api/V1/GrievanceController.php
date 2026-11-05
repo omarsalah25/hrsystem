@@ -98,5 +98,16 @@ class GrievanceController extends Controller
             'data' => $case,
         ]);
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $case = GrievanceCase::findOrFail($id);
+        $case->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Grievance case deleted successfully',
+        ]);
+    }
 }
 

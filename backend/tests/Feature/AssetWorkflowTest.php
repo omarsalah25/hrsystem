@@ -99,3 +99,4 @@ class AssetWorkflowTest extends TestCase
         $this->assertDatabaseMissing('company_assets', ['id' => $assetId]);
     }
 }
+
