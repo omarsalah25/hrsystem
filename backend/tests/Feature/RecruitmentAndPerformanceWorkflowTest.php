@@ -161,3 +161,4 @@ class RecruitmentAndPerformanceWorkflowTest extends TestCase
         $this->assertDatabaseMissing('grievance_cases', ['id' => $caseId]);
     }
 }
+

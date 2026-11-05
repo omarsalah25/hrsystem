@@ -103,7 +103,7 @@ class OffboardingController extends Controller
         $employee = Employee::findOrFail($validated['employee_id']);
         $employee->update([
             'separation_date' => $validated['separation_date'],
-            'employment_status' => 'TERMINATED',
+            'employment_status' => 'OFFBOARDED',
         ]);
 
         return response()->json([
