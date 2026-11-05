@@ -7,6 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "test:render": "node test_render_payslip.js",
+    "test:cert": "node test_render_certificate.js",
     "start": "node dist/index.js"
   },
   "dependencies": {

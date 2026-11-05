@@ -37,5 +37,6 @@ Route::prefix('v1')->group(function () {
 
         // Secure Document Vault (Local Storage)
         Route::get('/documents/payslips/{id}/download', [SecureDocumentController::class, 'downloadPayslip']);
+        Route::get('/documents/certificates/{id}/download', [SecureDocumentController::class, 'downloadCertificate']);
     });
 });

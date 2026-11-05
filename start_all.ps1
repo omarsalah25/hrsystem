@@ -23,3 +23,4 @@ Write-Host "`nAll HRSystem services launched successfully!" -ForegroundColor Yel
 Write-Host "Web Application URL:   http://localhost:3000" -ForegroundColor White
 Write-Host "Backend API Base URL:  http://127.0.0.1:8000/api/v1" -ForegroundColor White
 Write-Host "ADMS Biometric Bridge: http://127.0.0.1:8081/iclock/cdata" -ForegroundColor White
+

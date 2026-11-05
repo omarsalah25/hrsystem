@@ -143,3 +143,4 @@ renderSamplePayslip().catch(err => {
   console.error('Error rendering payslip:', err);
   process.exit(1);
 });
+

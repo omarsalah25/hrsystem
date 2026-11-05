@@ -37,5 +37,25 @@ class SecureDocumentController extends Controller
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
         ]);
     }
+
+    /**
+     * Securely stream PDF official salary certificate
+     */
+    public function downloadCertificate(Request $request): BinaryFileResponse
+    {
+        $certPath = 'certificates/SAMPLE_CERTIFICATE_EMP_SA001.pdf';
+
+        if (!Storage::disk('local')->exists($certPath)) {
+            abort(404, __('messages.not_found'));
+        }
+
+        $fullPath = Storage::disk('local')->path($certPath);
+
+        return response()->file($fullPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="salary_certificate.pdf"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
 }
 
