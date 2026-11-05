@@ -47,3 +47,4 @@ class PayrollRunDatabaseTest extends TestCase
         $this->assertStringContainsString('RJHI', $sif);
     }
 }
+

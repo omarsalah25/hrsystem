@@ -1,0 +1,320 @@
+openapi: 3.1.0
+info:
+  title: HRSystem Enterprise Cloud HCM REST API
+  description: |
+    Multi-tenant enterprise HRIS/HCM platform tailored for Saudi Arabia (GOSI, Mudad WPS, Qiwa) 
+    and Egypt (Labor Law 12, SI Law 148, Income Tax Law 30).
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+    description: Local Development API
+  - url: https://api.hrsystem.com/v1
+    description: Production Cloud Gateway
+
+components:
+  securitySchemes:
+    SanctumBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: SanctumToken
+
+  schemas:
+    TenantHeader:
+      type: string
+      example: "demo"
+      description: Tenant subdomain identifier
+
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@hrsystem.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+
+    AuthLoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "1|3f9a8b7c6d5e4f3a2b1c"
+        token_type:
+          type: string
+          example: "Bearer"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: "مدير النظام | System Admin"
+            email:
+              type: string
+              example: "admin@hrsystem.com"
+
+    AttendancePunchRequest:
+      type: object
+      required: [punch_type, device_source]
+      properties:
+        punch_type:
+          type: string
+          enum: [CHECK_IN, CHECK_OUT]
+          example: "CHECK_IN"
+        latitude:
+          type: number
+          format: float
+          example: 24.71355
+        longitude:
+          type: number
+          format: float
+          example: 46.67529
+        device_source:
+          type: string
+          enum: [MOBILE_APP, BIOMETRIC_CLOCK, MANUAL_WEB]
+          example: "MOBILE_APP"
+        wifi_bssid:
+          type: string
+          example: "3c:37:86:14:f2:a0"
+
+    PayrollRunRequest:
+      type: object
+      required: [company_id, cycle_name, start_date, end_date, disbursement_date]
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        cycle_name:
+          type: string
+          example: "مسير شهر نوفمبر 2026"
+        start_date:
+          type: string
+          format: date
+          example: "2026-11-01"
+        end_date:
+          type: string
+          format: date
+          example: "2026-11-30"
+        disbursement_date:
+          type: string
+          format: date
+          example: "2026-11-27"
+
+paths:
+  /auth/login:
+    post:
+      summary: Multi-Tenant Login & Token Generation
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+
+  /auth/me:
+    get:
+      summary: Get Current Authenticated Profile
+      tags: [Authentication]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: User profile details
+
+  /employees:
+    get:
+      summary: List Employees with Multi-Criteria Filters
+      tags: [Employees]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: branch_id
+          in: query
+          schema:
+            type: string
+        - name: department_id
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated employee directory
+
+  /attendance/punch:
+    post:
+      summary: Record Biometric or Mobile GPS Punch
+      tags: [Attendance]
+      security:
+        - SanctumBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendancePunchRequest'
+      responses:
+        '200':
+          description: Punch validated and registered
+
+  /leaves:
+    get:
+      summary: List Pending and Historical Leaves
+      tags: [Leaves]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of leave requests
+
+    post:
+      summary: Submit a New Leave Request
+      tags: [Leaves]
+      security:
+        - SanctumBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leave_type_id, start_date, end_date, reason]
+              properties:
+                leave_type_id: { type: string, format: uuid }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                reason: { type: string }
+      responses:
+        '201':
+          description: Leave request submitted
+
+  /leaves/{id}/approve:
+    patch:
+      summary: Manager / HR Sign-off on Leave Request
+      tags: [Leaves]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Leave approved
+
+  /leaves/{id}/reject:
+    patch:
+      summary: Reject Leave Request with Justification
+      tags: [Leaves]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rejection_reason]
+              properties:
+                rejection_reason: { type: string }
+      responses:
+        '200':
+          description: Leave rejected
+
+  /payroll/runs:
+    post:
+      summary: Execute Statutory Gross-to-Net Payroll Calculation Run
+      tags: [Payroll]
+      security:
+        - SanctumBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayrollRunRequest'
+      responses:
+        '201':
+          description: Payroll cycle calculated
+
+  /payroll/runs/{id}/export-wps:
+    get:
+      summary: Download Saudi Mudad Wage Protection System (SIF) File
+      tags: [Payroll]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: SIF CSV File Download
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /documents/payslips/{id}/download:
+    get:
+      summary: Securely Stream Encrypted Payslip PDF
+      tags: [Documents]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Binary PDF Stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /documents/certificates/{id}/download:
+    get:
+      summary: Securely Stream Official HR Salary Certificate PDF
+      tags: [Documents]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Binary PDF Stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
