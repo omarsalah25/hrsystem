@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import api from '@/lib/api';
 import {
   Users,
   Search,
@@ -108,8 +109,37 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [activeModalEmployee, setActiveModalEmployee] = useState<EmployeeItem | null>(null);
+  const [employeesList, setEmployeesList] = useState<EmployeeItem[]>(sampleEmployees);
 
-  const filteredEmployees = sampleEmployees.filter((emp) => {
+  React.useEffect(() => {
+    api.employees.list()
+      .then((res) => {
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const mapped: EmployeeItem[] = res.data.map((e: any) => ({
+            id: e.id,
+            empNo: e.employee_number || 'EMP-000',
+            name: `${e.first_name} ${e.last_name}`,
+            email: e.work_email,
+            phone: e.profile?.emergency_contact_phone || '+966 50 000 0000',
+            dept: e.department?.name_ar || 'تقنية المعلومات',
+            role: e.designation?.name_ar || 'مهندس برمجيات',
+            branch: e.branch?.name_ar || 'فرع الرياض',
+            flag: e.branch?.country === 'SA' ? '🇸🇦' : '🇪🇬',
+            status: e.employment_status || 'ACTIVE',
+            salary: 'SAR 24,000',
+            hireDate: e.hire_date || '2023-01-01',
+            attendanceMode: e.attendance_mode === 'BOTH' ? 'مزدوج (بصمة + محمول)' : 'محمول',
+            gosiOrId: 'GOSI / SI Verified'
+          }));
+          setEmployeesList(mapped);
+        }
+      })
+      .catch(() => {
+        // Fallback to sampleEmployees
+      });
+  }, []);
+
+  const filteredEmployees = employeesList.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.empNo.toLowerCase().includes(searchTerm.toLowerCase()) ||

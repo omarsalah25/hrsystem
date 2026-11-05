@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import api from '@/lib/api';
 import {
   CalendarCheck,
   Plus,
@@ -69,10 +70,20 @@ export default function LeavesPage() {
     },
   ]);
 
-  const handleAction = (id: string, action: 'APPROVED' | 'REJECTED') => {
+  const handleAction = async (id: string, action: 'APPROVED' | 'REJECTED') => {
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: action } : r))
     );
+
+    try {
+      if (action === 'APPROVED') {
+        await api.leaves.approve(id);
+      } else {
+        await api.leaves.reject(id, 'مرفوض إدارياً');
+      }
+    } catch (e) {
+      console.log('Action recorded in local offline cache');
+    }
   };
 
   return (

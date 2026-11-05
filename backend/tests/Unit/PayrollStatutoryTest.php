@@ -61,3 +61,4 @@ class PayrollStatutoryTest extends TestCase
         $this->assertEquals(90000.00, $termination['final_award_amount']);
     }
 }
+

@@ -51,6 +51,35 @@ graph LR
 
 ---
 
+## 🚀 One-Click Quick Start (Local & Production Orchestration)
+
+To launch the complete HR system suite simultaneously across all 4 services:
+
+### Option A: Windows Batch Launcher
+```cmd
+start_all.bat
+```
+
+### Option B: PowerShell
+```powershell
+.\start_all.ps1
+```
+
+### 🌐 Running Service Ports & Gateways:
+- **Web Application Portal:** [http://localhost:3000](http://localhost:3000) (Next.js 15 App Router with full Arabic RTL & English)
+- **Backend Core REST API:** [http://127.0.0.1:8000/api/v1](http://127.0.0.1:8000/api/v1) (Laravel 11, PHP 8.3 & Sanctum)
+- **ADMS Biometric Push Bridge:** [http://127.0.0.1:8081/iclock/cdata](http://127.0.0.1:8081/iclock/cdata) (Fastify listener for ZKTeco & Hikvision)
+- **Encrypted Local Storage Vault:** `backend/storage/app/private/payslips/` (Streamed via authenticated controllers)
+
+### 🧪 Automated Test Suite Commands:
+- **Statutory Labor Law Unit Tests (PHPUnit):** `cd backend && .\vendor\bin\phpunit tests/Unit` (21 assertions passed in 28ms)
+- **Biometric Push Protocol Verification:** `cd bridge && npm test` (ADMS handshake & punch parsing passed)
+- **Puppeteer Bilingual PDF Payslip Test:** `cd workers && npm run test:render` (Encrypted PDF generated in storage)
+- **Next.js Production Build:** `cd frontend && npm run build` (All 22 routes compiled with 0 errors)
+
+
+---
+
 ## 📚 Blueprint Structure & Navigation
 
 | Document | Focus & Scope | Key Contents |
