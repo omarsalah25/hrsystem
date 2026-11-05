@@ -319,3 +319,247 @@ paths:
                 type: string
                 format: binary
 
+  # Enterprise Assets
+  /assets:
+    get:
+      summary: List company assets & equipment
+      tags: [Assets]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of assets
+    post:
+      summary: Register new asset
+      tags: [Assets]
+      security:
+        - SanctumBearer: []
+      responses:
+        '201':
+          description: Asset created
+
+  /assets/{id}/assign:
+    post:
+      summary: Assign asset custody to employee
+      tags: [Assets]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Assigned successfully
+
+  /assets/{id}/return:
+    post:
+      summary: Return asset custody
+      tags: [Assets]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Returned successfully
+
+  # Recruitment (ATS)
+  /recruitment/openings:
+    get:
+      summary: List job openings with applicant metrics
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of job openings
+    post:
+      summary: Create new job opening
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      responses:
+        '201':
+          description: Job opening created
+
+  /recruitment/openings/{id}:
+    get:
+      summary: Get job opening with candidate applications
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Opening details with applications
+
+  /recruitment/openings/{id}/applications:
+    post:
+      summary: Submit candidate application
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Application submitted
+
+  /recruitment/applications/{id}/stage:
+    patch:
+      summary: Update candidate pipeline stage
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Stage updated
+
+  /recruitment/applications/{id}/scorecard:
+    patch:
+      summary: Update interview scorecard rating and notes
+      tags: [Recruitment]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Scorecard saved
+
+  # Grievances & Employee Relations
+  /grievances:
+    get:
+      summary: List employee grievance cases
+      tags: [Employee Relations]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of grievances
+    post:
+      summary: File new confidential grievance
+      tags: [Employee Relations]
+      security:
+        - SanctumBearer: []
+      responses:
+        '201':
+          description: Grievance filed
+
+  /grievances/{id}/status:
+    patch:
+      summary: Update grievance investigation status & committee notes
+      tags: [Employee Relations]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Status updated
+
+  # Performance & OKRs
+  /performance/goals:
+    get:
+      summary: List employee OKR goals
+      tags: [Performance]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of goals
+    post:
+      summary: Create employee OKR goal
+      tags: [Performance]
+      security:
+        - SanctumBearer: []
+      responses:
+        '201':
+          description: Goal created
+
+  /performance/goals/{id}/progress:
+    patch:
+      summary: Update OKR progress percentage
+      tags: [Performance]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Progress updated
+
+  # Cryptographic SHA-256 Audit Trail
+  /audit/logs:
+    get:
+      summary: Query immutable audit logs
+      tags: [Audit]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: Paginated audit logs
+
+  /audit/verify-chain:
+    get:
+      summary: Cryptographically verify SHA-256 hash chain integrity
+      tags: [Audit]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: Integrity verification result
+
+  # Branches & Geofencing
+  /branches:
+    get:
+      summary: List branches and company locations
+      tags: [Organization]
+      security:
+        - SanctumBearer: []
+      responses:
+        '200':
+          description: List of branches
+
+  /branches/{id}/geofence:
+    patch:
+      summary: Update branch GPS geofence radius and attendance mode
+      tags: [Organization]
+      security:
+        - SanctumBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Geofence updated
+
+
