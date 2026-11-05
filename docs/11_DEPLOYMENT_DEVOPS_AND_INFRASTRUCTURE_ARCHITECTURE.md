@@ -288,3 +288,4 @@ aws s3 sync /var/www/html/storage/app/private s3://company-hr-disaster-recovery/
 
 echo "✓ Backup completed at $(date)"
 ```
+

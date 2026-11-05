@@ -179,3 +179,4 @@ The server can instruct physical terminals to perform administrative actions (e.
    - The BullMQ worker validates punches using a unique composite index in MySQL:
      `UNIQUE KEY uk_punch_unique (device_serial, biometric_user_id, punch_time)`.
    - Any duplicate punches received during network retries are dropped without skewing timesheets.
+
