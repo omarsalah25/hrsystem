@@ -33,7 +33,13 @@ export default function SidebarNav() {
 
   const navGroups = [
     {
-      groupTitle: isAr ? 'العمليات الأساسية' : 'Core Operations',
+      groupTitle: isAr ? 'إدارة المنظومة القابضة' : 'Holding Administration',
+      items: [
+        { href: '/admin', label: isAr ? 'لوحة مالك المنظومة (Admin)' : 'Platform Owner Cockpit', icon: ShieldCheck, badge: 'SaaS' },
+      ],
+    },
+    {
+      groupTitle: isAr ? 'العمليات الأساسية للشركات' : 'Company Operations',
       items: [
         { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
         { href: '/self-service', label: isAr ? 'الخدمة الذاتية (ESS)' : 'Self-Service (ESS)', icon: UserCircle },

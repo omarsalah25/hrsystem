@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useTranslation } from '@/lib/translations';
-import { Globe2, Bell, Search, MapPin } from 'lucide-react';
+import { Globe2, Bell, Search, MapPin, ShieldCheck } from 'lucide-react';
 
 export default function HeaderNav() {
   const { t, locale, setLocale, isRtl } = useTranslation();
@@ -34,6 +35,15 @@ export default function HeaderNav() {
             <option value="CAI">🇪🇬 فرع القاهرة - القرية الذكية (EGY)</option>
           </select>
         </div>
+
+        {/* Platform Admin Switcher */}
+        <Link
+          href="/admin"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition shadow-xs"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+          <span>{locale === 'ar' ? 'لوحة مالك النظام (Admin)' : 'Platform Admin'}</span>
+        </Link>
 
         {/* Language Switcher */}
         <button

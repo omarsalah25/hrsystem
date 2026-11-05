@@ -346,5 +346,68 @@ class UserLifecycleAndAdminDashboardTest extends TestCase
         $unauthorizedPayroll->assertStatus(403)
             ->assertJsonPath('success', false);
     }
+
+    /**
+     * Test Platform Admin System Overview and Company Breakdown Reports with Portal Authentication Separation
+     */
+    public function test_platform_admin_overview_and_company_reporting_with_portal_separation(): void
+    {
+        // 1. Platform Admin logs in with portal_type = 'ADMIN'
+        $adminLogin = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@hrsystem.com',
+            'password' => 'password123',
+            'portal_type' => 'ADMIN',
+        ]);
+        $adminLogin->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.role', 'SUPER_ADMIN')
+            ->assertJsonPath('data.user.default_portal', 'ADMIN');
+
+        // 2. Non-super admin attempts to log in via ADMIN portal -> Rejected
+        $employeeLoginAttempt = $this->postJson('/api/v1/auth/login', [
+            'email' => 'employee@hrsystem.com',
+            'password' => 'password123',
+            'portal_type' => 'ADMIN',
+        ]);
+        $employeeLoginAttempt->assertStatus(422);
+
+        // 3. Platform Admin queries comprehensive companies overview report
+        Sanctum::actingAs($this->superAdmin);
+        $overviewResponse = $this->getJson('/api/v1/reports/companies-overview');
+        $overviewResponse->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'system_totals' => [
+                        'total_companies',
+                        'total_branches',
+                        'total_departments',
+                        'total_employees',
+                        'active_employees',
+                        'total_assets',
+                        'total_monthly_payroll',
+                        'system_health',
+                    ],
+                    'companies' => [
+                        '*' => [
+                            'id',
+                            'legal_name',
+                            'trade_name',
+                            'country_code',
+                            'currency',
+                            'total_employees',
+                            'active_employees',
+                            'localization_rate',
+                            'branches_count',
+                            'departments_count',
+                            'assets_count',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertGreaterThanOrEqual(1, count($overviewResponse->json('data.companies')));
+    }
 }
 

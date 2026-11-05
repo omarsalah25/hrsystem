@@ -20,6 +20,7 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required|string',
             'subdomain' => 'nullable|string',
+            'portal_type' => 'nullable|in:ADMIN,COMPANY',
         ]);
 
         $query = User::where('email', $request->email);
@@ -39,6 +40,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($request->portal_type === 'ADMIN' && $user->role !== 'SUPER_ADMIN') {
+            throw ValidationException::withMessages([
+                'email' => ['هذا الحساب لا يمتلك صلاحيات إدارة النظام المركزية (Platform Owner / Super Admin). يرجى تسجيل الدخول عبر بوابة الشركات والموظفين.'],
+            ]);
+        }
+
         $token = $user->createToken('api_access_token')->plainTextToken;
         $user->update(['last_login_at' => now()]);
 
@@ -53,6 +60,8 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'role' => $user->role,
                     'tenant_id' => $user->tenant_id,
+                    'accessible_portals' => $user->role === 'SUPER_ADMIN' ? ['ADMIN', 'COMPANY'] : ['COMPANY'],
+                    'default_portal' => $user->role === 'SUPER_ADMIN' ? 'ADMIN' : 'COMPANY',
                 ],
                 'tenant' => $user->tenant ? [
                     'id' => $user->tenant->id,

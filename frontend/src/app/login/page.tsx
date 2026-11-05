@@ -38,12 +38,19 @@ export default function LoginPage() {
   const handleConfirmLogin = async () => {
     setIsSubmitting(true);
     try {
-      await api.auth.login({ email, password });
+      const res = await api.auth.login({ email, password, portal_type: 'COMPANY' });
+      const user = res?.data?.user;
+      if (user?.role === 'EMPLOYEE') {
+        router.push('/self-service');
+      } else {
+        router.push('/');
+      }
     } catch (e) {
       console.log('Logging in with enterprise local session...');
+      router.push('/');
     } finally {
       setIsSubmitting(false);
-      router.push('/');
+      setIs2faModalOpen(false);
     }
   };
 
@@ -192,6 +199,16 @@ export default function LoginPage() {
             >
               تسجيل الدخول (Sign In)
             </button>
+
+            {/* Portal Switch Link */}
+            <div className="pt-2 text-center">
+              <Link
+                href="/admin/login"
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-bold transition"
+              >
+                <span>{isAr ? 'بوابة مالك المنظومة والشركات القابضة (Platform Admin) ←' : 'Platform Owner & Group Holdings Login →'}</span>
+              </Link>
+            </div>
           </form>
 
           {/* Compliance & Security Footer */}

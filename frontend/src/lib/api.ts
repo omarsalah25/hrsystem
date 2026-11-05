@@ -87,7 +87,7 @@ class ApiClient {
 
   // Authentication
   public auth = {
-    login: async (credentials: { email: string; password: string; subdomain?: string }) => {
+    login: async (credentials: { email: string; password: string; subdomain?: string; portal_type?: 'ADMIN' | 'COMPANY' }) => {
       const data = await this.request<any>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
@@ -95,6 +95,9 @@ class ApiClient {
       const token = data?.data?.token || data?.token || data?.access_token;
       if (typeof window !== 'undefined' && token) {
         localStorage.setItem('hr_token', token);
+        if (data?.data?.user) {
+          localStorage.setItem('hr_user', JSON.stringify(data.data.user));
+        }
       }
       return data;
     },
@@ -107,6 +110,7 @@ class ApiClient {
       } finally {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('hr_token');
+          localStorage.removeItem('hr_user');
         }
       }
     },
@@ -512,6 +516,9 @@ class ApiClient {
 
   // Executive Reports & Statutory Compliance
   public reports = {
+    companiesOverview: async () => {
+      return this.request<{ success: boolean; data: any }>('/reports/companies-overview');
+    },
     saudization: async (companyId?: string) => {
       const q = companyId ? `?company_id=${companyId}` : '';
       return this.request<{ success: boolean; data: any }>(`/reports/saudization${q}`);

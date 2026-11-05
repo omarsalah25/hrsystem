@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/offboarding/initiate', [OffboardingController::class, 'initiate'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Executive Analytics & Compliance Reports
+        Route::get('/reports/companies-overview', [ReportController::class, 'companiesOverview']);
         Route::get('/reports/saudization', [ReportController::class, 'saudization']);
         Route::get('/reports/egyptianization', [ReportController::class, 'egyptianization']);
         Route::get('/reports/bradford-factor', [ReportController::class, 'bradfordFactor']);

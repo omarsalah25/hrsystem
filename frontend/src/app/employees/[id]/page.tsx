@@ -149,7 +149,7 @@ export default function EmployeeProfilePage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center text-2xl font-bold shadow-md">
-                {employee.first_name[0]}{employee.last_name[0]}
+                {employee.first_name?.[0] || 'م'}{employee.last_name?.[0] || 'و'}
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
