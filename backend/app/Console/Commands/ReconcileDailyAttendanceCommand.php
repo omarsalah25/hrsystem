@@ -50,13 +50,13 @@ class ReconcileDailyAttendanceCommand extends Command
                 );
                 $absent++;
             } else {
-                $firstIn = $punches->filter(fn($p) => in_array($p->punch_type, ['IN', 'CHECK_IN']))->first() ?? $punches->first();
-                $lastOut = $punches->filter(fn($p) => in_array($p->punch_type, ['OUT', 'CHECK_OUT']))->last() ?? $punches->last();
+                $firstIn = $punches->where('punch_type', 'CHECK_IN')->first() ?? $punches->first();
+                $lastOut = $punches->where('punch_type', 'CHECK_OUT')->last() ?? $punches->last();
 
                 $hours = 8.00;
                 if ($firstIn && $lastOut && $firstIn->id !== $lastOut->id) {
-                    $inTime = \Illuminate\Support\Carbon::parse($firstIn->punch_time);
-                    $outTime = \Illuminate\Support\Carbon::parse($lastOut->punch_time);
+                    $inTime = \Carbon\Carbon::parse($firstIn->punch_time);
+                    $outTime = \Carbon\Carbon::parse($lastOut->punch_time);
                     $diffSecs = max(0, $outTime->getTimestamp() - $inTime->getTimestamp());
                     $hours = round($diffSecs / 3600.0, 2);
                 }
@@ -97,3 +97,4 @@ class ReconcileDailyAttendanceCommand extends Command
         return Command::SUCCESS;
     }
 }
+

@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   Scale,
   ShieldAlert,
@@ -27,33 +29,52 @@ interface GrievanceCase {
 }
 
 export default function EmployeeRelationsPage() {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
 
   const [cases, setCases] = useState<GrievanceCase[]>([
     {
       id: '1',
-      caseNumber: 'CASE-2026-08',
-      title: 'نزاع حول توزيع مهام العمل الإضافي في الوردية الليلية',
-      category: 'خلافات بيئة العمل والعدالة التشغيلية',
-      isAnonymous: false,
-      complainant: 'موظف تشغيل (فرع الرياض)',
-      assignedInvestigator: 'سارة محمد القحطاني (HR Lead)',
-      dateFiled: '2026-11-02',
-      status: 'INVESTIGATING',
-    },
-    {
-      id: '2',
-      caseNumber: 'CASE-2026-07',
-      title: 'إبلاغ سرّي عن اشتباه بمخالفة في تقييم أداء أحد الموظفين',
-      category: 'نزاهة وحوكمة إدارية',
+      caseNumber: 'GRC-2026-0001',
+      title: 'طلب مراجعة درجات التكييف والإضاءة في قاعة العمليات بالرياض',
+      category: 'خلافات بيئة العمل والصحة المهنية',
       isAnonymous: true,
-      complainant: 'مجهول الهوية (قناة الإبلاغ السرية المشفرة)',
-      assignedInvestigator: 'د. عبدالله السعيد (HR Director)',
-      dateFiled: '2026-10-25',
-      status: 'FINDINGS_READY',
+      complainant: 'سارة محمد القحطاني',
+      assignedInvestigator: 'لجنة المرافق والسلامة',
+      dateFiled: '2026-11-02',
+      status: 'RESOLVED',
     },
   ]);
+
+  useEffect(() => {
+    api.grievances.list()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: GrievanceCase[] = rawItems.map((g: any) => ({
+            id: g.id,
+            caseNumber: g.case_number || `GRC-${g.id.slice(0, 6)}`,
+            title: g.incident_description?.slice(0, 50) + '...',
+            category: g.category || 'بيئة العمل',
+            isAnonymous: Boolean(g.is_confidential),
+            complainant: g.complainant ? `${g.complainant.first_name} ${g.complainant.last_name}` : 'سرّي',
+            assignedInvestigator: 'لجنة الموارد البشرية',
+            dateFiled: g.created_at ? g.created_at.slice(0, 10) : '2026-11-05',
+            status: g.status === 'RESOLVED' ? 'RESOLVED' : 'INVESTIGATING',
+          }));
+          setCases(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load grievances from API:', err);
+      });
+  }, []);
 
   return (
     <DashboardLayout>

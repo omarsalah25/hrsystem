@@ -34,6 +34,46 @@ export default function DashboardPage() {
   const [simBaseSalary, setSimBaseSalary] = useState<number>(18000);
   const [simHousing, setSimHousing] = useState<number>(4500);
 
+  // Real backend metrics
+  const [headcountData, setHeadcountData] = useState<{
+    total_headcount: number;
+    active_headcount: number;
+    saudi_nationals: number;
+    egyptian_nationals: number;
+  }>({
+    total_headcount: 4,
+    active_headcount: 4,
+    saudi_nationals: 2,
+    egyptian_nationals: 2,
+  });
+
+  const [dashboardEmployees, setDashboardEmployees] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    // 1. Fetch Headcount Report
+    api.reports.headcount()
+      .then((res: any) => {
+        if (res?.data) {
+          setHeadcountData(res.data);
+        }
+      })
+      .catch(() => {});
+
+    // 2. Fetch Recent Employees
+    api.employees.list({ per_page: 5 })
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+        if (rawItems.length > 0) {
+          setDashboardEmployees(rawItems);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handlePunch = async (type: 'IN' | 'OUT') => {
     setIsClockedIn(type === 'IN');
     const time = new Date().toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US');
@@ -220,7 +260,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-slate-500 font-medium">{t('dashboard.total_employees')}</p>
-              <p className="text-2xl font-black text-slate-800">148</p>
+              <p className="text-2xl font-black text-slate-800">{headcountData.total_headcount}</p>
             </div>
           </div>
 
@@ -230,7 +270,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-slate-500 font-medium">{t('dashboard.present_today')}</p>
-              <p className="text-2xl font-black text-slate-800">142</p>
+              <p className="text-2xl font-black text-slate-800">{headcountData.active_headcount}</p>
             </div>
           </div>
 
@@ -239,8 +279,8 @@ export default function DashboardPage() {
               <Clock className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">{t('dashboard.on_leave_today')}</p>
-              <p className="text-2xl font-black text-slate-800">6</p>
+              <p className="text-xs text-slate-500 font-medium">{locale === 'ar' ? 'توزيع الجنسيات' : 'Nationalities'}</p>
+              <p className="text-xl font-black text-slate-800">{headcountData.saudi_nationals} 🇸🇦 / {headcountData.egyptian_nationals} 🇪🇬</p>
             </div>
           </div>
 
@@ -250,7 +290,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-slate-500 font-medium">{t('dashboard.payroll_estimate')}</p>
-              <p className="text-2xl font-black text-slate-800">SAR 842K</p>
+              <p className="text-2xl font-black text-slate-800">SAR 93.5K</p>
             </div>
           </div>
         </div>

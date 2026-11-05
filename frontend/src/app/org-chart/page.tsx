@@ -4,6 +4,7 @@ import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import { Network, Users, ChevronDown, Building, Mail } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface OrgNode {
   name: string;
@@ -113,6 +114,19 @@ function OrgCard({ node }: { node: OrgNode }) {
 export default function OrgChartPage() {
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
+  const [liveOrg, setLiveOrg] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    api.orgChart.hierarchy()
+      .then((res: any) => {
+        if (res?.data) {
+          setLiveOrg(res.data);
+        }
+      })
+      .catch((err: any) => {
+        console.warn('Failed to load org chart hierarchy:', err);
+      });
+  }, []);
 
   return (
     <DashboardLayout>

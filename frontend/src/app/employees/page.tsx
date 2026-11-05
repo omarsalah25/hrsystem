@@ -114,30 +114,36 @@ export default function EmployeesPage() {
   const [employeesList, setEmployeesList] = useState<EmployeeItem[]>(sampleEmployees);
 
   React.useEffect(() => {
-    api.employees.list()
-      .then((res) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const mapped: EmployeeItem[] = res.data.map((e: any) => ({
+    api.employees.list({ per_page: 'all' })
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: EmployeeItem[] = rawItems.map((e: any) => ({
             id: e.id,
             empNo: e.employee_number || 'EMP-000',
-            name: `${e.first_name} ${e.last_name}`,
+            name: e.full_name || `${e.first_name} ${e.last_name}`,
             email: e.work_email,
-            phone: e.profile?.emergency_contact_phone || '+966 50 000 0000',
-            dept: e.department?.name_ar || 'تقنية المعلومات',
-            role: e.designation?.name_ar || 'مهندس برمجيات',
-            branch: e.branch?.name_ar || 'فرع الرياض',
-            flag: e.branch?.country === 'SA' ? '🇸🇦' : '🇪🇬',
+            phone: e.phone_number || e.profile?.phone || '+966 50 123 4567',
+            dept: e.department?.name || 'تقنية المعلومات',
+            role: e.designation?.title || 'مهندس برمجيات',
+            branch: e.branch?.name || (e.company?.country_code === 'SAU' ? 'فرع الرياض' : 'فرع القاهرة'),
+            flag: e.company?.country_code === 'SAU' ? '🇸🇦' : '🇪🇬',
             status: e.employment_status || 'ACTIVE',
-            salary: 'SAR 24,000',
-            hireDate: e.hire_date || '2023-01-01',
-            attendanceMode: e.attendance_mode === 'BOTH' ? 'مزدوج (بصمة + محمول)' : 'محمول',
-            gosiOrId: 'GOSI / SI Verified'
+            salary: `${e.current_salary?.currency || (e.company?.country_code === 'SAU' ? 'SAR' : 'EGP')} ${(Number(e.current_salary?.base_salary || 18000) + Number(e.current_salary?.housing_allowance || 0)).toLocaleString()}`,
+            hireDate: e.hire_date || '2023-01-15',
+            attendanceMode: e.allowed_attendance_mode === 'BOTH' ? 'مزدوج (بصمة + محمول)' : e.allowed_attendance_mode === 'BIOMETRIC_ONLY' ? 'بصمة حيوية' : 'محمول GPS',
+            gosiOrId: e.is_national ? (e.company?.country_code === 'SAU' ? 'مواطن (GOSI نشط)' : 'مواطن (تأمينات نشطة)') : 'مقيم / وافد',
           }));
           setEmployeesList(mapped);
         }
       })
-      .catch(() => {
-        // Fallback to sampleEmployees
+      .catch((err) => {
+        console.warn('Could not fetch real employees list, using defaults:', err);
       });
   }, []);
 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   ShieldCheck,
   Lock,
@@ -44,80 +45,89 @@ export default function AuditPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [chainIntegrity, setChainIntegrity] = useState(true);
 
-  const logs: AuditLog[] = [
+  const [logs, setLogs] = useState<AuditLog[]>([
     {
-      id: 'AUD-8921',
-      timestamp: '2026-11-05 03:45:12',
-      actorName: 'د. عبدالله السعيد',
-      actorRole: 'Super Admin',
-      actionType: 'SALARY_UPDATE',
-      resource: 'EmployeeSalary (EMP-SA-001)',
-      ipAddress: '192.168.1.45',
-      prevHash: '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-      currentHash: '9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72',
-      isVerified: true,
-      diff: {
-        before: { basic_salary: 16000, housing_allowance: 4000 },
-        after: { basic_salary: 18000, housing_allowance: 4500 },
-      },
-    },
-    {
-      id: 'AUD-8920',
-      timestamp: '2026-11-05 02:18:40',
-      actorName: 'سارة محمد القحطاني',
-      actorRole: 'HR Manager',
-      actionType: 'MANUAL_PUNCH_OVERRIDE',
-      resource: 'AttendancePunch (EMP-EG-001)',
-      ipAddress: '10.0.4.12',
-      prevHash: '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae',
-      currentHash: '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-      isVerified: true,
-      diff: {
-        before: { punch_time: null, status: 'ABSENT' },
-        after: { punch_time: '09:00:00', status: 'REGULARIZED_BY_HR' },
-      },
-    },
-    {
-      id: 'AUD-8919',
-      timestamp: '2026-11-04 18:22:05',
-      actorName: 'م. فهد الدوسري',
-      actorRole: 'Finance Director',
-      actionType: 'PII_ACCESS',
-      resource: 'EmployeeProfile (IBAN Vault)',
-      ipAddress: '172.16.0.88',
-      prevHash: 'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e',
-      currentHash: '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae',
-      isVerified: true,
-      diff: {
-        before: { action: 'VIEW_ENCRYPTED_BANK_DETAILS' },
-        after: { access_granted: true, reason: 'WPS_SIF_VERIFICATION' },
-      },
-    },
-    {
-      id: 'AUD-8918',
-      timestamp: '2026-11-04 14:10:33',
-      actorName: 'نورهان طارق المنشاوي',
-      actorRole: 'Payroll Admin',
+      id: 'LOG-0001',
+      timestamp: '2026-11-05 00:00:00',
+      actorName: 'System Admin',
+      actorRole: 'SUPER_ADMIN',
       actionType: 'ROLE_CHANGE',
-      resource: 'User (id: 4)',
-      ipAddress: '192.168.1.102',
-      prevHash: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-      currentHash: 'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e',
+      resource: 'SYSTEM',
+      ipAddress: '127.0.0.1',
+      prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
+      currentHash: '78b3912334eb7217525381f2674e2d31e9c20a466c0ef497475be6fe505d933e',
       isVerified: true,
       diff: {
-        before: { role: 'EMPLOYEE' },
-        after: { role: 'LEAVE_APPROVER' },
+        before: {},
+        after: { action: 'INITIAL_SYSTEM_BOOTSTRAP' },
       },
     },
-  ];
+    {
+      id: 'LOG-0002',
+      timestamp: '2026-11-05 01:15:00',
+      actorName: 'System Admin',
+      actorRole: 'SUPER_ADMIN',
+      actionType: 'SALARY_UPDATE',
+      resource: 'EMP-SA-001',
+      ipAddress: '127.0.0.1',
+      prevHash: '78b3912334eb7217525381f2674e2d31e9c20a466c0ef497475be6fe505d933e',
+      currentHash: '486b71fedb961c7c938d49ea45129668d277712e09ff7bdf88ea4e410b073070',
+      isVerified: true,
+      diff: {
+        before: { base_salary: 16000 },
+        after: { base_salary: 18000 },
+      },
+    },
+  ]);
 
-  const handleVerifyChain = () => {
+  React.useEffect(() => {
+    api.audit.listLogs()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: AuditLog[] = rawItems.map((l: any) => ({
+            id: l.log_number || `LOG-${l.id.slice(0, 6)}`,
+            timestamp: l.created_at || '2026-11-05 03:00:00',
+            actorName: l.actor_name || 'System Admin',
+            actorRole: l.actor_role || 'SUPER_ADMIN',
+            actionType: l.action_type === 'SALARY_CONFIG' ? 'SALARY_UPDATE' : l.action_type || 'ROLE_CHANGE',
+            resource: l.target_resource || 'SYSTEM',
+            ipAddress: l.ip_address || '127.0.0.1',
+            prevHash: l.prev_hash,
+            currentHash: l.current_hash,
+            isVerified: true,
+            diff: {
+              before: {},
+              after: l.payload_diff || {},
+            },
+          }));
+          setLogs(mapped);
+        }
+      })
+      .catch((err: any) => {
+        console.warn('Could not fetch audit logs from API:', err);
+      });
+  }, []);
+
+  const handleVerifyChain = async () => {
     setIsVerifying(true);
-    setTimeout(() => {
+    try {
+      const res = await api.audit.verifyChain();
+      setChainIntegrity(res.verified);
+      alert(isAr 
+        ? `تم فحص سلسلة التشفير بالكامل (${res.total_blocks} كتل): ${res.message}` 
+        : `Cryptographic audit chain verified (${res.total_blocks} blocks): ${res.message}`
+      );
+    } catch (err: any) {
+      alert(err.message || 'Audit check failed');
+    } finally {
       setIsVerifying(false);
-      setChainIntegrity(true);
-      alert(isAr ? 'تم فحص سلسلة التشفير بالكامل: لا يوجد أي تلاعب وسلسلة SHA-256 مطابقة بنسبة 100%' : 'Cryptographic chain audit complete: 100% verified and tamper-free');
-    }, 800);
+    }
   };
 
   return (

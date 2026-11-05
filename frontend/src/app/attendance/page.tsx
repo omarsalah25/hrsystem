@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   Clock,
   Cpu,
@@ -18,10 +19,44 @@ import {
 export default function AttendancePage() {
   const { t, locale } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [recentPunches, setRecentPunches] = useState<any[]>([]);
+  const [branchesList, setBranchesList] = useState<any[]>([]);
+  const [summaryStats, setSummaryStats] = useState({
+    present_days: 2,
+    late_days: 0,
+    total_hours: 16.5,
+    total_overtime: 0.5,
+  });
+
+  const loadAttendanceData = async () => {
+    setIsRefreshing(true);
+    try {
+      const [sumRes, branchRes] = await Promise.all([
+        api.attendance.mySummary().catch(() => null),
+        api.branches.list().catch(() => ({ data: [] })),
+      ]);
+
+      if (sumRes?.data) {
+        if (sumRes.data.records) setAttendanceRecords(sumRes.data.records);
+        if (sumRes.data.punches) setRecentPunches(sumRes.data.punches);
+        if (sumRes.data.summary) setSummaryStats(sumRes.data.summary);
+      }
+
+      if (branchRes?.data) {
+        setBranchesList(branchRes.data);
+      }
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  useEffect(() => {
+    loadAttendanceData();
+  }, []);
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 800);
+    loadAttendanceData();
   };
 
   return (

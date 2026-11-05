@@ -347,3 +347,4 @@ class UserLifecycleAndAdminDashboardTest extends TestCase
             ->assertJsonPath('success', false);
     }
 }
+

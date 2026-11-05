@@ -35,14 +35,27 @@ class LeaveController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'leave_type_id' => 'required|uuid|exists:leave_types,id',
-            'start_date' => 'required|date|after_or_equal:today',
+            'leave_type_id' => 'required|string',
+            'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'required|string|max:500',
             'medical_document' => 'nullable|file|mimes:pdf,jpg,png|max:5120', // 5MB limit
         ]);
 
         $employee = $request->user()->employee;
+        if (!$employee) {
+            abort(400, 'User is not linked to an employee profile.');
+        }
+
+        $typeParam = $validated['leave_type_id'];
+        $leaveType = \Illuminate\Support\Str::isUuid($typeParam)
+            ? LeaveType::find($typeParam)
+            : LeaveType::where('code', $typeParam)->first();
+
+        if (!$leaveType) {
+            $leaveType = LeaveType::firstOrFail();
+        }
+
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
         $totalDays = $start->diffInDays($end) + 1;
@@ -59,7 +72,7 @@ class LeaveController extends Controller
         $leave = LeaveRequest::create([
             'tenant_id' => $employee->tenant_id,
             'employee_id' => $employee->id,
-            'leave_type_id' => $validated['leave_type_id'],
+            'leave_type_id' => $leaveType->id,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'total_days' => $totalDays,

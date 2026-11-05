@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   Calendar,
   Clock,
@@ -84,6 +85,35 @@ export default function ShiftsPage() {
       isRamadan: false,
     },
   ]);
+
+  useEffect(() => {
+    api.shifts.list()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: Shift[] = rawItems.map((s: any) => ({
+            id: s.id,
+            nameAr: s.name_ar,
+            nameEn: s.name_en || s.name_ar,
+            startTime: s.start_time || '08:00',
+            endTime: s.end_time || '17:00',
+            breakMinutes: s.break_minutes || 60,
+            totalWorkingHours: s.daily_hours || 8,
+            color: s.is_ramadan_shift ? 'bg-emerald-500' : 'bg-blue-500',
+            isRamadan: Boolean(s.is_ramadan_shift),
+          }));
+          setShifts(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch shifts from API:', err);
+      });
+  }, []);
 
   // Days of the week in GCC / Egypt order (Sunday to Thursday + Friday/Saturday weekend)
   const days = [

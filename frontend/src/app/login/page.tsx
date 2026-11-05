@@ -98,6 +98,48 @@ export default function LoginPage() {
             <p className="text-xs text-slate-500 mt-1">
               {isAr ? 'أدخل بيانات الاعتماد الخاصة بك للوصول لمنصة الموارد البشرية' : 'Enter your credentials to access the HCM portal'}
             </p>
+
+            {/* Quick Demo Role Picker */}
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold mb-1.5">{isAr ? 'الحسابات التجريبية السريعة (اختر دوراً):' : 'Demo Accounts (Choose Role):'}</p>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setEmail('admin@hrsystem.com'); setPassword('password123'); }}
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[10px] font-bold"
+                >
+                  👑 Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('hr@hrsystem.com'); setPassword('password123'); }}
+                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded text-[10px] font-bold"
+                >
+                  👥 HR Lead
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('payroll@hrsystem.com'); setPassword('password123'); }}
+                  className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[10px] font-bold"
+                >
+                  💰 Payroll
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('auditor@hrsystem.com'); setPassword('password123'); }}
+                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold"
+                >
+                  🔍 Auditor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('employee@hrsystem.com'); setPassword('password123'); }}
+                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold"
+                >
+                  👤 Employee
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Form */}

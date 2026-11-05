@@ -72,6 +72,36 @@ export default function LeavesPage() {
     },
   ]);
 
+  React.useEffect(() => {
+    api.leaves.list()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: LeaveRequestItem[] = rawItems.map((r: any) => ({
+            id: r.id,
+            empName: r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : 'موظف',
+            empNo: r.employee?.employee_number || 'EMP-001',
+            dept: r.employee?.department?.name || 'إدارة العمليات',
+            type: r.leave_type?.name || 'إجازة سنوية',
+            startDate: r.start_date,
+            endDate: r.end_date,
+            totalDays: r.total_days,
+            reason: r.reason || 'إجازة شخصية',
+            status: r.status === 'APPROVED' ? 'APPROVED' : r.status === 'REJECTED' ? 'REJECTED' : 'PENDING',
+          }));
+          setRequests(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch leaves from API:', err);
+      });
+  }, []);
+
   const handleAction = async (id: string, action: 'APPROVED' | 'REJECTED') => {
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: action } : r))

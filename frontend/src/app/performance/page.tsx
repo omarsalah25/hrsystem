@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   Target,
   Award,
@@ -31,7 +32,7 @@ export default function PerformancePage() {
 
   const [activeTab, setActiveTab] = useState<'okrs' | 'ninebox' | 'reviews'>('ninebox');
 
-  const goals: OKRGoal[] = [
+  const [goals, setGoals] = useState<OKRGoal[]>([
     {
       id: '1',
       title: 'إطلاق نظام البصمة المزدوج وحماية الأجور للفرعين (الرياض والقاهرة)',
@@ -59,7 +60,34 @@ export default function PerformancePage() {
       weight: 30,
       status: 'AT_RISK',
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    api.performance.listGoals()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: OKRGoal[] = rawItems.map((g: any) => ({
+            id: g.id,
+            title: g.title,
+            owner: g.employee ? `${g.employee.first_name} ${g.employee.last_name}` : 'موظف',
+            dept: g.employee?.department?.name || 'تقنية المعلومات',
+            progress: g.progress_percentage || 0,
+            weight: 30,
+            status: g.status === 'ACHIEVED' ? 'COMPLETED' : g.status === 'AT_RISK' ? 'AT_RISK' : 'ON_TRACK',
+          }));
+          setGoals(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load performance goals from API:', err);
+      });
+  }, []);
 
   return (
     <DashboardLayout>

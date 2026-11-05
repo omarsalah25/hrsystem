@@ -131,3 +131,4 @@ class ProcessMonthlyPayrollCommand extends Command
         return Command::SUCCESS;
     }
 }
+

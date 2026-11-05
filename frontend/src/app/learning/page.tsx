@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   GraduationCap,
   Award,
@@ -39,18 +40,18 @@ export default function LearningPage() {
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
 
-  const courses: Course[] = [
+  const [courses, setCourses] = useState<Course[]>([
     {
-      id: '1',
+      id: 'CRS-001',
       title: 'التوعية بالأمن السيبراني وحماية البيانات (Cybersecurity & GDPR)',
       category: 'امتثال إلزامي (Compliance)',
       durationHours: 4,
       isMandatory: true,
-      enrolledCount: 148,
+      enrolledCount: 28,
       completionRate: 94,
     },
     {
-      id: '2',
+      id: 'CRS-002',
       title: 'دليل نظام العمل السعودي ومنصة قوى للعقود (Saudi Labor & Qiwa)',
       category: 'الشؤون القانونية',
       durationHours: 6,
@@ -59,15 +60,42 @@ export default function LearningPage() {
       completionRate: 80,
     },
     {
-      id: '3',
+      id: 'CRS-003',
       title: 'معايير السلامة المهنية والصحة (OSHA Standards)',
       category: 'سلامة مهنية',
       durationHours: 8,
       isMandatory: true,
-      enrolledCount: 148,
+      enrolledCount: 14,
       completionRate: 98,
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    api.learning.listCourses()
+      .then((res: any) => {
+        const rawItems = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        if (rawItems.length > 0) {
+          const mapped: Course[] = rawItems.map((c: any) => ({
+            id: c.id,
+            title: isAr ? c.title_ar : (c.title_en || c.title_ar),
+            category: c.category,
+            durationHours: parseInt(c.duration) || 6,
+            isMandatory: Boolean(c.is_mandatory),
+            enrolledCount: c.enrolled_count || 14,
+            completionRate: 90,
+          }));
+          setCourses(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch courses from API:', err);
+      });
+  }, []);
 
   const certificates: Certificate[] = [
     {

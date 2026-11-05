@@ -169,7 +169,7 @@ class EmployeeController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $employee = Employee::with([
+        $query = Employee::with([
             'department',
             'designation',
             'branch',
@@ -182,7 +182,11 @@ class EmployeeController extends Controller
             'attendanceRecords' => fn($q) => $q->latest('date')->limit(15),
             'leaveRequests' => fn($q) => $q->with('leaveType')->latest()->limit(10),
             'payslips' => fn($q) => $q->with('payrollRun')->latest()->limit(6),
-        ])->findOrFail($id);
+        ]);
+
+        $employee = Str::isUuid($id)
+            ? $query->findOrFail($id)
+            : $query->where('employee_number', $id)->firstOrFail();
 
         // Safe display data for sensitive encrypted fields
         $decryptedNationalId = null;

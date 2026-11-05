@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { api } from '@/lib/api';
 import {
   UserMinus,
   CheckCircle2,
@@ -22,14 +23,35 @@ export default function OffboardingPage() {
   const [tenureYears, setTenureYears] = useState<number>(4.5);
   const [lastSalary, setLastSalary] = useState<number>(18000);
   const [separationType, setSeparationType] = useState<'RESIGNATION' | 'TERMINATION'>('RESIGNATION');
+  const [calculatedResult, setCalculatedResult] = useState<any>(null);
 
   // Multi-department clearance checklist states
   const [itClear, setItClear] = useState(true);
   const [adminClear, setAdminClear] = useState(true);
   const [financeClear, setFinanceClear] = useState(false);
 
+  useEffect(() => {
+    api.offboarding.calculateEsb({
+      last_full_salary: lastSalary,
+      service_years: tenureYears,
+      separation_reason: separationType,
+      is_female: false,
+    }).then((res: any) => {
+      if (res?.data) {
+        setCalculatedResult(res.data);
+      }
+    }).catch(() => {});
+  }, [tenureYears, lastSalary, separationType]);
+
   // Compute Saudi Labor Law ESB (Articles 84 & 85)
   const computeGratuity = () => {
+    if (calculatedResult) {
+      return {
+        baseAward: calculatedResult.base_entitlement,
+        factor: calculatedResult.resignation_factor,
+        finalAmount: calculatedResult.final_award_amount,
+      };
+    }
     let baseAward = 0;
     if (tenureYears <= 5) {
       baseAward = (lastSalary / 2) * tenureYears;
