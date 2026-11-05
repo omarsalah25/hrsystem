@@ -29,14 +29,49 @@ export default function RecruitmentPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const [openings, setOpenings] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [isAddOpeningOpen, setIsAddOpeningOpen] = useState(false);
+  const [newOpening, setNewOpening] = useState({
+    department_id: '',
+    title_ar: '',
+    title_en: '',
+    job_description: '',
+    employment_type: 'FULL_TIME',
+    min_budget: 12000,
+    max_budget: 22000,
+  });
 
-  useEffect(() => {
+  const loadOpenings = () => {
     api.recruitment.listOpenings().then(res => {
       if (res?.data && res.data.length > 0) {
         setOpenings(res.data);
       }
     }).catch(console.error);
+  };
+
+  useEffect(() => {
+    loadOpenings();
+    api.departments.list().then(res => {
+      const depts = Array.isArray(res?.data) ? res.data : [];
+      setDepartments(depts);
+      if (depts.length > 0) {
+        setNewOpening(prev => ({ ...prev, department_id: depts[0].id }));
+      }
+    }).catch(console.error);
   }, []);
+
+  const handleCreateOpening = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.recruitment.createOpening(newOpening);
+      setIsAddOpeningOpen(false);
+      setNewOpening(prev => ({ ...prev, title_ar: '', title_en: '', job_description: '' }));
+      loadOpenings();
+      alert(locale === 'ar' ? 'تم نشر الإعلان الوظيفي بنجاح!' : 'Job opening posted successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Error posting job opening');
+    }
+  };
 
   const [candidates, setCandidates] = useState<Candidate[]>([
     {
@@ -115,7 +150,7 @@ export default function RecruitmentPage() {
         </div>
 
         <button
-          onClick={() => alert('نافذة نشر إعلان وظيفي جديد عبر البوابة ولينكدإن')}
+          onClick={() => setIsAddOpeningOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -200,6 +235,145 @@ export default function RecruitmentPage() {
           );
         })}
       </div>
+      {/* Modal: Post New Job Opening */}
+      {isAddOpeningOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900">
+                {locale === 'ar' ? 'نشر إعلان وظيفي جديد (Job Opening)' : 'Post New Job Opening'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddOpeningOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOpening} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {locale === 'ar' ? 'القسم / الإدارة التابعة' : 'Department'} *
+                </label>
+                <select
+                  required
+                  value={newOpening.department_id}
+                  onChange={(e) => setNewOpening({ ...newOpening, department_id: e.target.value })}
+                  className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                >
+                  <option value="">-- اختر القسم --</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.company?.trade_name || d.company?.legal_name || 'الشركة'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {locale === 'ar' ? 'المسمى الوظيفي (عربي)' : 'Title (Arabic)'} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: مهندس برمجيات أول"
+                    value={newOpening.title_ar}
+                    onChange={(e) => setNewOpening({ ...newOpening, title_ar: e.target.value })}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {locale === 'ar' ? 'المسمى الوظيفي (إنجليزي)' : 'Title (English)'} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Senior Software Engineer"
+                    value={newOpening.title_en}
+                    onChange={(e) => setNewOpening({ ...newOpening, title_en: e.target.value })}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {locale === 'ar' ? 'نوع الدوام' : 'Employment Type'}
+                  </label>
+                  <select
+                    value={newOpening.employment_type}
+                    onChange={(e) => setNewOpening({ ...newOpening, employment_type: e.target.value })}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                  >
+                    <option value="FULL_TIME">دوام كامل (Full-Time)</option>
+                    <option value="PART_TIME">دوام جزئي (Part-Time)</option>
+                    <option value="REMOTE">عن بُعد (Remote)</option>
+                    <option value="CONTRACT">عقد محدد (Contract)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {locale === 'ar' ? 'الحد الأدنى للراتب' : 'Min Budget'}
+                  </label>
+                  <input
+                    type="number"
+                    value={newOpening.min_budget}
+                    onChange={(e) => setNewOpening({ ...newOpening, min_budget: parseFloat(e.target.value) || 0 })}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {locale === 'ar' ? 'الحد الأقصى للراتب' : 'Max Budget'}
+                  </label>
+                  <input
+                    type="number"
+                    value={newOpening.max_budget}
+                    onChange={(e) => setNewOpening({ ...newOpening, max_budget: parseFloat(e.target.value) || 0 })}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {locale === 'ar' ? 'الوصف الوظيفي والمتطلبات' : 'Job Description & Requirements'} *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="المهام الوظيفية والمسؤوليات والخبرات الفنية المطلوبة..."
+                  value={newOpening.job_description}
+                  onChange={(e) => setNewOpening({ ...newOpening, job_description: e.target.value })}
+                  className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                ></textarea>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddOpeningOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition"
+                >
+                  {locale === 'ar' ? 'نشر الوظيفة' : 'Publish Job'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

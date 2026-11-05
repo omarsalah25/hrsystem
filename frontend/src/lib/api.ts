@@ -198,6 +198,12 @@ class ApiClient {
     },
   };
 
+  public departments = {
+    list: async () => {
+      return this.request<{ data: any[] }>('/departments');
+    },
+  };
+
   // Employees & Dossier 360
   public employees = {
     list: async (params?: { branch_id?: string; department_id?: string; company_id?: string; search?: string; per_page?: string | number }) => {

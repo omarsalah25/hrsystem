@@ -37,6 +37,10 @@ Route::prefix('v1')->group(function () {
         Route::match(['put', 'patch'], '/companies/{id}', [CompanyController::class, 'update'])->middleware('role:SUPER_ADMIN');
         Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->middleware('role:SUPER_ADMIN');
 
+        Route::get('/departments', function () {
+            return response()->json(['success' => true, 'data' => \App\Models\Department::with('company')->get()]);
+        });
+
         Route::get('/branches', [BranchController::class, 'index']);
         Route::get('/branches/{id}', [BranchController::class, 'show']);
         Route::post('/branches', [BranchController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
