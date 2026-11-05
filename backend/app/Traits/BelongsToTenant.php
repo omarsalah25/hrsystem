@@ -11,9 +11,15 @@ trait BelongsToTenant
     public static function bootBelongsToTenant(): void
     {
         static::addGlobalScope('tenant', function (Builder $builder) {
-            $tenantId = request()->header('X-Tenant-ID') 
-                ?? request()->user()?->tenant_id 
-                ?? app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
+            $tenantId = null;
+
+            if (request()->hasHeader('X-Tenant-ID')) {
+                $tenantId = request()->header('X-Tenant-ID');
+            } elseif (request()->user()) {
+                $tenantId = request()->user()->tenant_id;
+            } elseif (app()->bound('current_tenant_id')) {
+                $tenantId = app('current_tenant_id');
+            }
 
             if ($tenantId) {
                 $builder->where($builder->getModel()->getTable() . '.tenant_id', $tenantId);
@@ -22,9 +28,15 @@ trait BelongsToTenant
 
         static::creating(function ($model) {
             if (!$model->tenant_id) {
-                $tenantId = request()->header('X-Tenant-ID') 
-                    ?? request()->user()?->tenant_id 
-                    ?? app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
+                $tenantId = null;
+
+                if (request()->hasHeader('X-Tenant-ID')) {
+                    $tenantId = request()->header('X-Tenant-ID');
+                } elseif (request()->user()) {
+                    $tenantId = request()->user()->tenant_id;
+                } elseif (app()->bound('current_tenant_id')) {
+                    $tenantId = app('current_tenant_id');
+                }
 
                 if ($tenantId) {
                     $model->tenant_id = $tenantId;
@@ -38,4 +50,3 @@ trait BelongsToTenant
         return $this->belongsTo(Tenant::class);
     }
 }
-

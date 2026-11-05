@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import api from '@/lib/api';
 import {
   Briefcase,
   Plus,
@@ -24,7 +26,17 @@ interface Candidate {
 }
 
 export default function RecruitmentPage() {
+  const router = useRouter();
   const { t, locale } = useTranslation();
+  const [openings, setOpenings] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.recruitment.listOpenings().then(res => {
+      if (res?.data && res.data.length > 0) {
+        setOpenings(res.data);
+      }
+    }).catch(console.error);
+  }, []);
 
   const [candidates, setCandidates] = useState<Candidate[]>([
     {
@@ -110,6 +122,36 @@ export default function RecruitmentPage() {
           <span>{locale === 'ar' ? 'نشر وظيفة جديدة' : 'Post New Job'}</span>
         </button>
       </div>
+
+      {/* Active Job Openings Navigation */}
+      {openings.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800">الوظائف والفرص الشاغرة المفتوحة:</span>
+            <span className="text-xs text-slate-400">{openings.length} وظيفة متاحة</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {openings.map(op => (
+              <div
+                key={op.id}
+                onClick={() => router.push(`/recruitment/${op.id}`)}
+                className="p-3.5 rounded-xl border border-slate-200 hover:border-indigo-500 bg-slate-50/50 hover:bg-indigo-50/30 cursor-pointer transition flex items-center justify-between"
+              >
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">{op.title_ar}</h4>
+                  <p className="text-xs text-slate-500">{op.title_en} • {op.department?.name || 'التقنية'}</p>
+                </div>
+                <div className="text-left">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                    {op.applications_count || 0} مرشح
+                  </span>
+                  <p className="text-[11px] text-indigo-600 font-bold mt-1">فتح مسار الفرز &larr;</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Kanban Board Grid */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">

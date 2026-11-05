@@ -111,5 +111,20 @@ class Employee extends Model
     {
         return $this->hasMany(Payslip::class);
     }
+
+    public function assetAssignments(): HasMany
+    {
+        return $this->hasMany(AssetAssignment::class);
+    }
+
+    public function grievanceCases(): HasMany
+    {
+        return $this->hasMany(GrievanceCase::class, 'complainant_employee_id');
+    }
+
+    public function okrGoals(): HasMany
+    {
+        return $this->hasMany(OkrGoal::class);
+    }
 }
 

@@ -23,6 +23,40 @@ class PayrollController extends Controller
         protected SaudiPayrollService $saudiService
     ) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        $query = PayrollRun::with('company');
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $runs = $query->latest()->paginate($request->integer('per_page', 10));
+
+        return response()->json([
+            'success' => true,
+            'data' => $runs,
+        ]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        $run = PayrollRun::with([
+            'company',
+            'payslips.employee.department',
+            'payslips.employee.designation'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $run,
+        ]);
+    }
+
     /**
      * Initialize and calculate a monthly payroll run
      */
@@ -71,18 +105,16 @@ class PayrollController extends Controller
                 $other = (float) $salary->other_allowances;
 
                 if ($isEgypt) {
-                    // Egypt Statutory Calculation
                     $calc = $this->egyptService->computeMonthlyPayroll($basic, $housing + $transport, $other);
                     $eeSI = $calc['employee_social_insurance'];
                     $erSI = $calc['employer_social_insurance'];
                     $tax = $calc['income_tax'];
                     $net = $calc['net_salary'];
                 } else {
-                    // Saudi Arabia / GCC Calculation
                     $calc = $this->saudiService->computeMonthlyPayroll($basic, $housing, $transport + $other, $emp->is_national);
                     $eeSI = $calc['employee_gosi'];
                     $erSI = $calc['employer_gosi'];
-                    $tax = 0.00; // No personal income tax in Saudi Arabia
+                    $tax = 0.00;
                     $net = $calc['net_salary'];
                 }
 
@@ -122,6 +154,60 @@ class PayrollController extends Controller
     }
 
     /**
+     * Adjust a specific payslip line in a calculated run
+     */
+    public function adjustPayslip(Request $request, string $runId, string $payslipId): JsonResponse
+    {
+        $validated = $request->validate([
+            'other_deductions' => 'nullable|numeric|min:0',
+            'unpaid_leave_deductions' => 'nullable|numeric|min:0',
+            'adjustment_reason' => 'required|string|max:255',
+        ]);
+
+        $run = PayrollRun::findOrFail($runId);
+        if ($run->status === 'FINANCE_APPROVED' || $run->status === 'DISBURSED' || $run->status === 'CLOSED') {
+            return response()->json(['success' => false, 'message' => 'Cannot adjust finalized or disbursed payroll.'], 422);
+        }
+
+        $payslip = Payslip::where('payroll_run_id', $run->id)->findOrFail($payslipId);
+
+        $unpaidDed = (float) ($validated['unpaid_leave_deductions'] ?? $payslip->unpaid_leave_deductions);
+        $otherDed = (float) ($validated['other_deductions'] ?? $payslip->other_deductions);
+
+        $newNet = $payslip->gross_earnings - $payslip->employee_social_insurance - $payslip->income_tax - $unpaidDed - $otherDed;
+
+        $payslip->update([
+            'unpaid_leave_deductions' => $unpaidDed,
+            'other_deductions' => $otherDed,
+            'net_pay' => max(0, $newNet),
+        ]);
+
+        $newTotalNet = $run->payslips()->sum('net_pay');
+        $run->update(['total_net' => $newTotalNet]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payslip line adjusted successfully',
+            'data' => $payslip,
+        ]);
+    }
+
+    /**
+     * Approve payroll run for disbursement
+     */
+    public function approve(string $id): JsonResponse
+    {
+        $run = PayrollRun::findOrFail($id);
+        $run->update(['status' => 'FINANCE_APPROVED']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payroll run approved and authorized for bank disbursement',
+            'data' => $run,
+        ]);
+    }
+
+    /**
      * Export Saudi Wage Protection System (WPS / Mudad SIF file)
      */
     public function exportWpsSif(string $id): StreamedResponse
@@ -158,7 +244,7 @@ class PayrollController extends Controller
                     'EDR',
                     $emp->profile?->national_id_encrypted ? decrypt($emp->profile->national_id_encrypted) : $emp->employee_number,
                     $emp->full_name,
-                    'SA0000000000000000000000', // IBAN
+                    'SA0000000000000000000000',
                     $company->bank_code ?? 'RJHI',
                     $payslip->gross_earnings,
                     0.00,
@@ -172,4 +258,3 @@ class PayrollController extends Controller
         }, 200, $headers);
     }
 }
-

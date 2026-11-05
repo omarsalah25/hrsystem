@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\EmployeeProfile;
+use App\Models\EmployeeSalary;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,10 +19,18 @@ class EmployeeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::with(['department', 'designation', 'branch', 'currentSalary']);
+        $query = Employee::with(['department', 'designation', 'branch', 'company', 'currentSalary']);
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
         }
 
         if ($request->filled('status')) {
@@ -38,7 +47,15 @@ class EmployeeController extends Controller
             });
         }
 
-        $employees = $query->paginate($request->integer('per_page', 15));
+        if ($request->get('per_page') === 'all') {
+            $employees = $query->orderBy('first_name')->get();
+            return response()->json([
+                'success' => true,
+                'data' => $employees,
+            ]);
+        }
+
+        $employees = $query->latest()->paginate($request->integer('per_page', 15));
 
         return response()->json([
             'success' => true,
@@ -68,6 +85,16 @@ class EmployeeController extends Controller
             'date_of_birth' => 'required|date',
             'gender' => 'required|in:MALE,FEMALE',
             'nationality' => 'required|string|size:3',
+            'marital_status' => 'nullable|in:SINGLE,MARRIED,DIVORCED,WIDOWED',
+            'social_insurance_no' => 'nullable|string|max:50',
+            'residential_address' => 'nullable|string|max:255',
+
+            // Salary structure (optional at creation)
+            'base_salary' => 'nullable|numeric|min:0',
+            'housing_allowance' => 'nullable|numeric|min:0',
+            'transportation_allowance' => 'nullable|numeric|min:0',
+            'other_allowances' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|size:3',
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
@@ -77,7 +104,7 @@ class EmployeeController extends Controller
             $user = User::create([
                 'tenant_id' => $tenantId,
                 'email' => $validated['work_email'],
-                'password' => Hash::make(Str::random(12)), // Initial temporary password
+                'password' => Hash::make(Str::random(12)),
                 'status' => 'ACTIVE',
             ]);
 
@@ -107,15 +134,33 @@ class EmployeeController extends Controller
             EmployeeProfile::create([
                 'employee_id' => $employee->id,
                 'national_id_encrypted' => encrypt($validated['national_id']),
+                'social_insurance_no' => $validated['social_insurance_no'] ?? null,
                 'date_of_birth' => $validated['date_of_birth'],
                 'gender' => $validated['gender'],
                 'nationality' => $validated['nationality'],
+                'marital_status' => $validated['marital_status'] ?? 'SINGLE',
+                'residential_address' => $validated['residential_address'] ?? null,
             ]);
+
+            // 4. Create Salary record if provided
+            if (isset($validated['base_salary'])) {
+                EmployeeSalary::create([
+                    'tenant_id' => $tenantId,
+                    'employee_id' => $employee->id,
+                    'effective_from' => $validated['hire_date'],
+                    'base_salary' => $validated['base_salary'],
+                    'housing_allowance' => $validated['housing_allowance'] ?? 0.00,
+                    'transportation_allowance' => $validated['transportation_allowance'] ?? 0.00,
+                    'other_allowances' => $validated['other_allowances'] ?? 0.00,
+                    'currency' => $validated['currency'] ?? 'SAR',
+                    'is_current' => true,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => __('messages.created'),
-                'data' => $employee->load(['department', 'designation']),
+                'message' => 'Employee onboarded successfully with compliance records',
+                'data' => $employee->load(['department', 'designation', 'branch', 'currentSalary']),
             ], 201);
         });
     }
@@ -126,14 +171,62 @@ class EmployeeController extends Controller
             'department',
             'designation',
             'branch',
+            'company',
+            'manager',
             'currentSalary',
             'profile',
+            'assetAssignments.asset',
+            'okrGoals',
+            'attendanceRecords' => fn($q) => $q->latest('date')->limit(15),
+            'leaveRequests' => fn($q) => $q->with('leaveType')->latest()->limit(10),
+            'payslips' => fn($q) => $q->with('payrollRun')->latest()->limit(6),
         ])->findOrFail($id);
+
+        // Safe display data for sensitive encrypted fields
+        $decryptedNationalId = null;
+        if ($employee->profile && $employee->profile->national_id_encrypted) {
+            try {
+                $rawId = decrypt($employee->profile->national_id_encrypted);
+                $decryptedNationalId = substr($rawId, 0, 3) . '****' . substr($rawId, -4);
+            } catch (\Exception $e) {
+                $decryptedNationalId = '************';
+            }
+        }
+
+        $employeeArray = $employee->toArray();
+        if (isset($employeeArray['profile'])) {
+            $employeeArray['profile']['national_id_display'] = $decryptedNationalId;
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $employee,
+            'data' => $employeeArray,
+        ]);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $employee = Employee::findOrFail($id);
+
+        $validated = $request->validate([
+            'first_name' => 'string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'string|max:100',
+            'work_email' => 'email|max:191',
+            'phone_number' => 'nullable|string|max:30',
+            'department_id' => 'nullable|uuid|exists:departments,id',
+            'designation_id' => 'nullable|uuid|exists:designations,id',
+            'branch_id' => 'nullable|uuid|exists:branches,id',
+            'allowed_attendance_mode' => 'in:DEFAULT,BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH',
+            'employment_status' => 'in:ACTIVE,ON_LEAVE,SUSPENDED,TERMINATED',
+        ]);
+
+        $employee->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Employee details updated successfully',
+            'data' => $employee->load(['department', 'designation', 'branch']),
         ]);
     }
 }
-

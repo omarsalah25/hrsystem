@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import {
@@ -33,6 +34,7 @@ interface BranchConfig {
 }
 
 export default function CompanyBranchesPage() {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
 
@@ -299,9 +301,12 @@ export default function CompanyBranchesPage() {
                 </p>
               </div>
             </div>
-            <span className="text-xs text-emerald-400 font-bold">
-              {isAr ? 'مطابق لقوانين وزارة الموارد البشرية' : 'Compliant with HR Regulations'}
-            </span>
+            <button
+              onClick={() => router.push(`/company/branches/${selectedBranch.id}`)}
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+            >
+              {isAr ? 'إدارة السياج والأجهزة الحيوية ←' : 'Manage Hardware & Radar →'}
+            </button>
           </div>
         </div>
       </div>

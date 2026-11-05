@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
@@ -36,8 +37,18 @@ interface PayslipPreviewData {
 }
 
 export default function PayrollPage() {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipPreviewData | null>(null);
+  const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.payroll.list().then(res => {
+      if (res?.data?.data && res.data.data.length > 0) {
+        setPayrollRuns(res.data.data);
+      }
+    }).catch(console.error);
+  }, []);
 
   const employeesPayroll: PayslipPreviewData[] = [
     {
@@ -117,6 +128,34 @@ export default function PayrollPage() {
           </button>
         </div>
       </div>
+
+      {/* Active Batches List */}
+      {payrollRuns.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+              <Banknote className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 text-sm">{payrollRuns[0].cycle_name}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                  {payrollRuns[0].status}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                الشركة: {payrollRuns[0].company?.legal_name} • الصافي: {Number(payrollRuns[0].total_net).toLocaleString()} SAR
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push(`/payroll/${payrollRuns[0].id}`)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            عرض تفاصيل الدفعة والتعديلات الفردية &larr;
+          </button>
+        </div>
+      )}
 
       {/* Cycle Summary Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

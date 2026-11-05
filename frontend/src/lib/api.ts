@@ -1,7 +1,7 @@
 /**
  * HRSystem Enterprise API Client
- * Seamlessly interfaces Next.js 15 with Laravel 11 Sanctum REST API
- * Supports Bearer token authentication, multi-tenant headers, and offline fallback
+ * Interfaces Next.js 15 with Laravel 11 Sanctum REST API
+ * Supports Bearer token authentication, multi-tenant headers, and offline resilience
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
@@ -25,7 +25,7 @@ class ApiClient {
     return headers;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  public async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = { ...this.getHeaders(), ...(options.headers as Record<string, string>) };
 
@@ -74,18 +74,61 @@ class ApiClient {
     },
   };
 
-  // Employees
+  // Companies & Branches
+  public companies = {
+    list: async () => {
+      return this.request<{ data: any[] }>('/companies');
+    },
+    get: async (id: string) => {
+      return this.request<{ data: any }>(`/companies/${id}`);
+    },
+  };
+
+  public branches = {
+    list: async (companyId?: string) => {
+      const q = companyId ? `?company_id=${companyId}` : '';
+      return this.request<{ data: any[] }>(`/branches${q}`);
+    },
+    get: async (id: string) => {
+      return this.request<{ data: any }>(`/branches/${id}`);
+    },
+    updateGeofence: async (id: string, payload: {
+      geofence_latitude: number;
+      geofence_longitude: number;
+      geofence_radius_meters: number;
+      attendance_mode: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/branches/${id}/geofence`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Employees & Dossier 360
   public employees = {
-    list: async (params?: { branch_id?: string; department_id?: string; search?: string }) => {
+    list: async (params?: { branch_id?: string; department_id?: string; company_id?: string; search?: string; per_page?: string | number }) => {
       const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
-      return this.request<{ data: any[] }>(`/employees${query}`);
+      return this.request<{ data: any }>(`/employees${query}`);
     },
     get: async (id: string) => {
       return this.request<{ data: any }>(`/employees/${id}`);
     },
+    create: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/employees', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    update: async (id: string, payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/employees/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
   };
 
-  // Attendance & Punches (Dual Hardware Biometric & GPS Mobile)
+  // Attendance (Dual Hardware Biometric & GPS Mobile)
   public attendance = {
     punch: async (payload: {
       punch_type: 'CHECK_IN' | 'CHECK_OUT';
@@ -135,15 +178,170 @@ class ApiClient {
 
   // Statutory Payroll
   public payroll = {
-    createRun: async (payload: { company_id: string; payroll_cycle: string }) => {
-      return this.request<{ success: boolean; data: any }>('/payroll/runs', {
+    list: async (params?: { company_id?: string; status?: string }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any }>(`/payroll/runs${q}`);
+    },
+    get: async (id: string) => {
+      return this.request<{ data: any }>(`/payroll/runs/${id}`);
+    },
+    createRun: async (payload: {
+      company_id: string;
+      cycle_name: string;
+      start_date: string;
+      end_date: string;
+      disbursement_date: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/payroll/runs', {
         method: 'POST',
         body: JSON.stringify(payload),
+      });
+    },
+    adjustPayslip: async (runId: string, payslipId: string, payload: {
+      other_deductions?: number;
+      unpaid_leave_deductions?: number;
+      adjustment_reason: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/payroll/runs/${runId}/payslips/${payslipId}/adjust`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+    approve: async (id: string) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/payroll/runs/${id}/approve`, {
+        method: 'PATCH',
       });
     },
     exportWps: (runId: string) => {
       const url = `${API_BASE_URL}/payroll/runs/${runId}/export-wps`;
       window.open(url, '_blank');
+    },
+  };
+
+  // Assets & Hardware Custody
+  public assets = {
+    list: async (params?: { category?: string; status?: string; search?: string }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any }>(`/assets${q}`);
+    },
+    get: async (id: string) => {
+      return this.request<{ data: any }>(`/assets/${id}`);
+    },
+    create: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/assets', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    assign: async (id: string, payload: {
+      employee_id: string;
+      assigned_date: string;
+      condition_on_handover: string;
+      handover_notes?: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/assets/${id}/assign`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    returnAsset: async (id: string, payload: {
+      returned_date: string;
+      condition_on_return: string;
+      handover_notes?: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/assets/${id}/return`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Recruitment & ATS
+  public recruitment = {
+    listOpenings: async (params?: { status?: string; department_id?: string }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any[] }>(`/recruitment/openings${q}`);
+    },
+    getOpening: async (id: string) => {
+      return this.request<{ data: any }>(`/recruitment/openings/${id}`);
+    },
+    createOpening: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/recruitment/openings', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    createApplication: async (openingId: string, payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/recruitment/openings/${openingId}/applications`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    updateStage: async (applicationId: string, stage: string) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/recruitment/applications/${applicationId}/stage`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stage }),
+      });
+    },
+    updateScorecard: async (applicationId: string, payload: { scorecard_rating: number; interviewer_feedback?: string }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/recruitment/applications/${applicationId}/scorecard`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Grievances & Employee Relations
+  public grievances = {
+    list: async (params?: { status?: string; category?: string }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any }>(`/grievances${q}`);
+    },
+    get: async (id: string) => {
+      return this.request<{ data: any }>(`/grievances/${id}`);
+    },
+    create: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/grievances', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    updateStatus: async (id: string, payload: { status: string; resolution_notes?: string }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/grievances/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Performance & OKRs
+  public performance = {
+    listGoals: async (params?: { employee_id?: string; cycle_period?: string; status?: string }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any[] }>(`/performance/goals${q}`);
+    },
+    createGoal: async (payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/performance/goals', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    updateProgress: async (id: string, payload: { progress_percentage: number; status?: string }) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/performance/goals/${id}/progress`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+
+  // Cryptographic Audit Trail
+  public audit = {
+    listLogs: async (params?: { action_type?: string; search?: string; per_page?: number }) => {
+      const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return this.request<{ data: any }>(`/audit/logs${q}`);
+    },
+    verifyChain: async () => {
+      return this.request<{ success: boolean; verified: boolean; total_blocks: number; message: string; corrupted_block?: string }>('/audit/verify-chain');
     },
   };
 
@@ -153,9 +351,12 @@ class ApiClient {
       const url = `${API_BASE_URL}/documents/payslips/${payslipId}/download`;
       window.open(url, '_blank');
     },
+    downloadCertificate: (certId: string) => {
+      const url = `${API_BASE_URL}/documents/certificates/${certId}/download`;
+      window.open(url, '_blank');
+    },
   };
 }
 
 export const api = new ApiClient();
 export default api;
-

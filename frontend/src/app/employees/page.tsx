@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
@@ -105,6 +106,7 @@ const sampleEmployees: EmployeeItem[] = [
 ];
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const { t, locale, isRtl } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL');
@@ -173,7 +175,10 @@ export default function EmployeesPage() {
             <Download className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'تصدير Excel' : 'Export Excel'}</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20">
+          <button
+            onClick={() => router.push('/employees/new')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20"
+          >
             <Plus className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'إضافة موظف جديد' : 'Add Employee'}</span>
           </button>
@@ -322,7 +327,13 @@ export default function EmployeesPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button
+                onClick={() => router.push(`/employees/${activeModalEmployee.id}`)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                {locale === 'ar' ? 'الانتقال إلى الملف الشامل 360°' : 'Go to Full 360° Profile'}
+              </button>
               <button
                 onClick={() => setActiveModalEmployee(null)}
                 className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"

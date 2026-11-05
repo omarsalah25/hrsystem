@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
@@ -29,6 +30,7 @@ interface LeaveRequestItem {
 }
 
 export default function LeavesPage() {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [requests, setRequests] = useState<LeaveRequestItem[]>([
@@ -102,11 +104,11 @@ export default function LeavesPage() {
         </div>
 
         <button
-          onClick={() => setIsApplyModalOpen(true)}
+          onClick={() => router.push('/leaves/apply')}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{locale === 'ar' ? 'تقديم طلب إجازة جديد' : 'Apply for Leave'}</span>
+          <span>{locale === 'ar' ? 'تقديم طلب إجازة نظامية' : 'Apply for Statutory Leave'}</span>
         </button>
       </div>
 
