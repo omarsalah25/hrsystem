@@ -1,0 +1,71 @@
+{
+  "system_title": "Enterprise Cloud HRIS",
+  "tagline": "Unified Human Resources Platform for Egypt & Saudi Arabia / GCC",
+  "nav": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "attendance": "Attendance",
+    "leaves": "Leaves",
+    "payroll": "Payroll",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "total_employees": "Total Employees",
+    "on_leave_today": "On Leave Today",
+    "present_today": "Present Today",
+    "payroll_estimate": "Estimated Monthly Payroll",
+    "quick_punch": "Quick Clock-In / Out",
+    "clock_in_btn": "Clock In",
+    "clock_out_btn": "Clock Out",
+    "geofence_status": "Branch Geofence Status",
+    "within_geofence": "You are inside the authorized branch boundary",
+    "outside_geofence": "You are outside the branch boundary",
+    "biometric_synced": "Biometric devices (ZKTeco/Hikvision) connected",
+    "recent_activity": "Recent System Activity",
+    "jurisdiction_badge": "Compliant with Egypt & Saudi Arabia Labor & Social Insurance Laws"
+  },
+  "employees": {
+    "title": "Employee Directory",
+    "add_new": "Add Employee",
+    "emp_no": "Emp ID",
+    "name": "Employee Name",
+    "department": "Department",
+    "role": "Designation",
+    "branch": "Branch",
+    "status": "Status",
+    "salary": "Salary",
+    "active": "Active",
+    "actions": "Actions"
+  },
+  "payroll": {
+    "title": "Compensation & Payroll",
+    "run_cycle": "Process Payroll Cycle",
+    "egypt_rules": "Egypt Social Insurance (Law 148) & Tax Law 30",
+    "saudi_rules": "Saudi GOSI & Wage Protection System (WPS)",
+    "gross": "Gross Salary",
+    "social_insurance": "Social Insurance",
+    "taxes": "Income Tax",
+    "net": "Net Payout",
+    "download_payslip": "Download Payslip PDF",
+    "export_wps": "Export WPS SIF File"
+  },
+  "leaves": {
+    "title": "Leave Management",
+    "request_leave": "Apply for Leave",
+    "annual_balance": "Annual Leave Balance",
+    "sick_balance": "Sick Leave Balance",
+    "pending_approvals": "Pending Approvals"
+  },
+  "common": {
+    "ar": "العربية",
+    "en": "English",
+    "switch_lang": "Language",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "search": "Quick search..."
+  }
+}
+

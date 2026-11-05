@@ -1,0 +1,71 @@
+{
+  "system_title": "نظام الموارد البشرية السحابي",
+  "tagline": "منظومة متكاملة للمؤسسات في مصر والمملكة العربية السعودية",
+  "nav": {
+    "dashboard": "لوحة القيادة",
+    "employees": "سجل الموظفين",
+    "attendance": "الحضور والانصراف",
+    "leaves": "إدارة الإجازات",
+    "payroll": "مسير الرواتب",
+    "reports": "التقارير",
+    "settings": "إعدادات النظام"
+  },
+  "dashboard": {
+    "welcome": "مرحباً بك مجدداً",
+    "total_employees": "إجمالي الموظفين",
+    "on_leave_today": "في إجازة اليوم",
+    "present_today": "حاضرون اليوم",
+    "payroll_estimate": "إجمالي مسير الرواتب الشهري",
+    "quick_punch": "تسجيل الحضور السريع",
+    "clock_in_btn": "تسجيل دخول (Clock In)",
+    "clock_out_btn": "تسجيل خروج (Clock Out)",
+    "geofence_status": "حالة النطاق الجغرافي (Geofence)",
+    "within_geofence": "أنت داخل نطاق الفرع المصرح به",
+    "outside_geofence": "أنت خارج نطاق الفرع",
+    "biometric_synced": "الأجهزة الحيوية (ZKTeco/Hikvision) متصلة وتعمل",
+    "recent_activity": "آخر الحركات والنشاطات",
+    "jurisdiction_badge": "النظام متوافق مع قوانين العمل والتأمينات في مصر والسعودية"
+  },
+  "employees": {
+    "title": "قائمة الموظفين",
+    "add_new": "إضافة موظف جديد",
+    "emp_no": "الرقم الوظيفي",
+    "name": "اسم الموظف",
+    "department": "القسم",
+    "role": "المسمى الوظيفي",
+    "branch": "الفرع",
+    "status": "الحالة",
+    "salary": "الراتب",
+    "active": "نشط",
+    "actions": "الإجراءات"
+  },
+  "payroll": {
+    "title": "مسير الرواتب والتعويضات",
+    "run_cycle": "معالجة مسير الشهر",
+    "egypt_rules": "نظام التأمينات والضرائب المصرية (قانون 148 / 2024)",
+    "saudi_rules": "نظام التأمينات السعودي (GOSI) وحماية الأجور (WPS)",
+    "gross": "الراتب الشامل",
+    "social_insurance": "التأمينات الاجتماعية",
+    "taxes": "الضرائب",
+    "net": "صافي الراتب",
+    "download_payslip": "تحميل قسيمة الراتب PDF",
+    "export_wps": "تصدير ملف حماية الأجور (SIF)"
+  },
+  "leaves": {
+    "title": "إدارة الإجازات",
+    "request_leave": "تقديم طلب إجازة",
+    "annual_balance": "رصيد الإجازة السنوية",
+    "sick_balance": "رصيد الإجازة المرضية",
+    "pending_approvals": "طلبات بانتظار الموافقة"
+  },
+  "common": {
+    "ar": "العربية",
+    "en": "English",
+    "switch_lang": "تغيير اللغة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "loading": "جاري التحميل...",
+    "search": "بحث سريع..."
+  }
+}
+

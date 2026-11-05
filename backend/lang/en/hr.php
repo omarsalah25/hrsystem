@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'tenant' => 'Organization / Tenant',
+    'company' => 'Company',
+    'branch' => 'Branch',
+    'department' => 'Department',
+    'designation' => 'Designation',
+    'employee' => 'Employee',
+    'employees' => 'Employees',
+    'employee_number' => 'Employee Number',
+    'full_name' => 'Full Name',
+    'hire_date' => 'Hire Date',
+    'attendance' => 'Time & Attendance',
+    'shifts' => 'Work Shifts',
+    'clock_in' => 'Clock In',
+    'clock_out' => 'Clock Out',
+    'leave' => 'Leave',
+    'leaves' => 'Leaves',
+    'payroll' => 'Payroll & Compensation',
+    'payslip' => 'Payslip',
+    'base_salary' => 'Base Salary',
+    'housing_allowance' => 'Housing Allowance',
+    'transport_allowance' => 'Transport Allowance',
+    'gross_salary' => 'Gross Salary',
+    'net_salary' => 'Net Salary',
+    'egypt_social_insurance' => 'Egypt Social Insurance (Law 148)',
+    'gosi' => 'Saudi Social Insurance (GOSI)',
+    'end_of_service_award' => 'End of Service Award (ESB)',
+    'wps_file' => 'Wage Protection System (WPS / SIF)',
+];
+

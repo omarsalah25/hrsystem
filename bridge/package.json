@@ -1,0 +1,23 @@
+{
+  "name": "hrsystem-biometric-bridge",
+  "version": "1.0.0",
+  "description": "Node.js Fastify ADMS Push Protocol Listener for ZKTeco and Hikvision Clocks",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "fastify": "^4.28.1",
+    "ioredis": "^5.4.1",
+    "bullmq": "^5.8.6",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}
+
