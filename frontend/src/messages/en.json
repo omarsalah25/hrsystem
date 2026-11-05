@@ -8,7 +8,17 @@
     "leaves": "Leaves",
     "payroll": "Payroll",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin": "Platform Owner (Admin)",
+    "recruitment": "Recruitment (ATS)",
+    "performance": "Performance (OKRs)",
+    "learning": "Learning & Dev (L&D)",
+    "assets": "Asset Custody",
+    "company": "Companies & Branches",
+    "employee_relations": "Employee Relations",
+    "offboarding": "Offboarding & Clearance",
+    "audit": "SHA-256 Audit Trail",
+    "self_service": "Self-Service (ESS)"
   },
   "dashboard": {
     "welcome": "Welcome back",
