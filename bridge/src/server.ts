@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -9,31 +11,63 @@ const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const PORT = parseInt(process.env.BRIDGE_PORT || '8081', 10);
 
+let isRedisConnected = false;
+
+// Create resilient Redis connection
 const redisConnection = new Redis({
   host: REDIS_HOST,
   port: REDIS_PORT,
   maxRetriesPerRequest: null,
-  lazyConnect: true
+  enableOfflineQueue: false,
+  retryStrategy: (times) => {
+    return Math.min(times * 1000, 5000);
+  }
+});
+
+redisConnection.on('connect', () => {
+  isRedisConnected = true;
+  console.log('[Bridge] Connected to Redis queue server successfully.');
+});
+
+redisConnection.on('error', (err) => {
+  if (isRedisConnected) {
+    console.warn('[Bridge] Redis connection lost. Falling back to local buffer.');
+  }
+  isRedisConnected = false;
 });
 
 // Queue for uncoupled processing
-const punchQueue = new Queue('biometric-punches', {
-  connection: redisConnection
-});
+let punchQueue: Queue | null = null;
+try {
+  punchQueue = new Queue('biometric-punches', {
+    connection: redisConnection
+  });
+  punchQueue.on('error', () => {
+    // Suppress unhandled queue connection errors when redis is offline
+  });
+} catch (e) {
+  console.warn('[Bridge] Queue initialized in fallback mode');
+}
 
 const app = Fastify({
-  logger: {
-    level: 'info',
-    transport: {
-      target: 'pino-pretty'
-    }
-  }
+  logger: true
 });
 
 // Content parser for raw text sent by ADMS push protocols
 app.addContentTypeParser('text/plain', { parseAs: 'string' }, (req, body, done) => {
   done(null, body);
 });
+
+// Fallback buffer writer when Redis is down
+function logPunchFallback(record: Record<string, any>) {
+  try {
+    const logLine = JSON.stringify(record) + '\n';
+    const filePath = path.resolve(__dirname, '../punches_fallback.log');
+    fs.appendFileSync(filePath, logLine, 'utf8');
+  } catch (err) {
+    console.error('[Bridge] Failed to write to local fallback punch log:', err);
+  }
+}
 
 /**
  * 1. ZKTeco ADMS Device Handshake & Configuration
@@ -45,8 +79,6 @@ app.get('/iclock/cdata', async (request, reply) => {
 
   app.log.info({ serialNumber }, 'Handshake request received from biometric terminal');
 
-  // Standard ADMS protocol response flags:
-  // Stamp intervals, realtime push enabled, delay tolerances
   const responsePayload = [
     `GET OPTION FROM: ${serialNumber}`,
     'ATTLOGStamp=None',
@@ -73,8 +105,6 @@ app.post('/iclock/cdata', async (request, reply) => {
   const serialNumber = query.SN || 'UNKNOWN';
 
   if (query.table === 'ATTLOG') {
-    // Format: TAB separated lines:
-    // UserPIN \t Timestamp (YYYY-MM-DD HH:MM:SS) \t Status (0=In, 1=Out, 2=Break-Out, 3=Break-In, 4=OT-In, 5=OT-Out) \t VerifyType
     const lines = rawBody.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     app.log.info({ serialNumber, count: lines.length }, 'Processing ATTLOG punches from terminal');
 
@@ -82,23 +112,27 @@ app.post('/iclock/cdata', async (request, reply) => {
       const parts = line.split('\t');
       if (parts.length >= 2) {
         const [deviceUserId, punchTime, punchState] = parts;
+        const punchData = {
+          deviceSerial: serialNumber,
+          deviceUserId: deviceUserId.trim(),
+          punchTime: punchTime.trim(),
+          punchState: punchState ? punchState.trim() : '0',
+          receivedAt: new Date().toISOString()
+        };
 
-        try {
-          await punchQueue.add('adms-punch', {
-            deviceSerial: serialNumber,
-            deviceUserId: deviceUserId.trim(),
-            punchTime: punchTime.trim(),
-            punchState: punchState ? punchState.trim() : '0',
-            receivedAt: new Date().toISOString()
-          });
-        } catch (err) {
-          app.log.warn({ err }, 'Redis offline, logging punch locally for fallback retry');
+        if (isRedisConnected && punchQueue) {
+          try {
+            await punchQueue.add('adms-punch', punchData);
+          } catch (err) {
+            logPunchFallback(punchData);
+          }
+        } else {
+          logPunchFallback(punchData);
         }
       }
     }
   }
 
-  // Response required by ZKTeco firmware to commit log as delivered
   return reply.type('text/plain').send('OK');
 });
 
@@ -114,16 +148,22 @@ app.post('/api/hikvision/event', async (request, reply) => {
     const employeeNo = event.employeeNoString || event.cardNo;
     const punchTime = event.attendanceStatus ? event.dateTime : new Date().toISOString();
 
-    try {
-      await punchQueue.add('hikvision-punch', {
-        deviceSerial: payload.ipAddress || 'HIKVISION_TERMINAL',
-        deviceUserId: String(employeeNo),
-        punchTime: punchTime,
-        punchState: event.attendanceStatus === 'checkIn' ? '0' : '1',
-        receivedAt: new Date().toISOString()
-      });
-    } catch (err) {
-      app.log.warn({ err }, 'Redis offline, unable to enqueue Hikvision event');
+    const punchData = {
+      deviceSerial: payload.ipAddress || 'HIKVISION_TERMINAL',
+      deviceUserId: String(employeeNo),
+      punchTime: punchTime,
+      punchState: event.attendanceStatus === 'checkIn' ? '0' : '1',
+      receivedAt: new Date().toISOString()
+    };
+
+    if (isRedisConnected && punchQueue) {
+      try {
+        await punchQueue.add('hikvision-punch', punchData);
+      } catch (err) {
+        logPunchFallback(punchData);
+      }
+    } else {
+      logPunchFallback(punchData);
     }
   }
 
@@ -134,7 +174,11 @@ app.post('/api/hikvision/event', async (request, reply) => {
  * Health check endpoint
  */
 app.get('/health', async () => {
-  return { status: 'healthy', timestamp: new Date().toISOString() };
+  return {
+    status: 'healthy',
+    redis: isRedisConnected ? 'connected' : 'offline_fallback',
+    timestamp: new Date().toISOString()
+  };
 });
 
 const start = async () => {
@@ -148,4 +192,3 @@ const start = async () => {
 };
 
 start();
-

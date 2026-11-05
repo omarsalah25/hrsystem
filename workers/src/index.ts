@@ -13,15 +13,35 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const LARAVEL_STORAGE_PRIVATE = process.env.LARAVEL_PRIVATE_STORAGE_PATH ||
   path.resolve(__dirname, '../../backend/storage/app/private');
 
+console.log('🚀 Initializing HRIS BullMQ Workers & Background Processors...');
+
+// Create resilient Redis connection
 const redisConn = new Redis({
   host: REDIS_HOST,
   port: REDIS_PORT,
   maxRetriesPerRequest: null,
-  lazyConnect: true
+  enableOfflineQueue: false,
+  retryStrategy: (times) => {
+    return Math.min(times * 1000, 5000);
+  }
+});
+
+let isRedisAvailable = false;
+
+redisConn.on('connect', () => {
+  isRedisAvailable = true;
+  console.log('[Workers] Connected to Redis queue server successfully.');
+});
+
+redisConn.on('error', (err) => {
+  if (isRedisAvailable) {
+    console.warn('[Workers Warning] Redis connection lost. Workers will retry automatically.');
+  }
+  isRedisAvailable = false;
 });
 
 // MySQL connection pool for workers
-const dbPool = mysql.createPool({
+export const dbPool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '3306', 10),
   user: process.env.DB_USERNAME || 'root',
@@ -30,8 +50,6 @@ const dbPool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10
 });
-
-console.log('🚀 Initializing HRIS BullMQ Workers...');
 
 // -------------------------------------------------------------
 // 1. Payslip PDF Rendering Worker (Puppeteer with Arabic / RTL support)
@@ -78,6 +96,14 @@ export const payslipWorker = new Worker(
   },
   { connection: redisConn, concurrency: 3 }
 );
+
+payslipWorker.on('error', (err) => {
+  // Gracefully handle queue disconnection without crashing process
+});
+
+payslipWorker.on('completed', (job) => {
+  console.log(`[PayslipWorker] Job ${job.id} completed successfully.`);
+});
 
 // -------------------------------------------------------------
 // 2. Biometric Punch Ingestion & Pairing Worker
@@ -127,11 +153,12 @@ export const punchWorker = new Worker(
   { connection: redisConn, concurrency: 5 }
 );
 
-payslipWorker.on('completed', (job) => {
-  console.log(`[PayslipWorker] Job ${job.id} completed successfully.`);
+punchWorker.on('error', (err) => {
+  // Gracefully handle queue disconnection without crashing process
 });
 
 punchWorker.on('completed', (job) => {
   console.log(`[PunchWorker] Punch job ${job.id} matched successfully.`);
 });
 
+console.log('✅ BullMQ Workers are active, resilient, and monitoring queues.');
