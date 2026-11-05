@@ -188,6 +188,19 @@ export default function CompanyBranchesPage() {
     }
   };
 
+  const handleDeleteBranch = async (branchId: string, branchName: string) => {
+    if (!confirm(isAr ? `هل أنت متأكد من حذف الفرع (${branchName})؟` : `Are you sure you want to delete branch ${branchName}?`)) return;
+    try {
+      await api.branches.delete(branchId);
+      setStatusMessage(isAr ? 'تم حذف الفرع بنجاح.' : 'Branch deleted successfully.');
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Error deleting branch');
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -337,6 +350,12 @@ export default function CompanyBranchesPage() {
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteBranch(selectedBranch.id, selectedBranch.name)}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold shadow-xs transition"
+                >
+                  <span>{isAr ? 'حذف الفرع' : 'Delete'}</span>
                 </button>
               </div>
             </div>

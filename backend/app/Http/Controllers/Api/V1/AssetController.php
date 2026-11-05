@@ -157,5 +157,16 @@ class AssetController extends Controller
             ]);
         });
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $asset = CompanyAsset::findOrFail($id);
+        $asset->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset deleted successfully',
+        ]);
+    }
 }
 

@@ -143,6 +143,11 @@ class ApiClient {
         body: JSON.stringify(payload),
       });
     },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/companies/${id}`, {
+        method: 'DELETE',
+      });
+    },
   };
 
   public branches = {
@@ -173,6 +178,11 @@ class ApiClient {
       return this.request<{ success: boolean; data: any; message: string }>(`/branches/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
+      });
+    },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/branches/${id}`, {
+        method: 'DELETE',
       });
     },
     updateGeofence: async (id: string, payload: {
@@ -340,6 +350,11 @@ class ApiClient {
       return this.request<{ success: boolean; data: any; message: string }>(`/assets/${id}/return`, {
         method: 'POST',
         body: JSON.stringify(payload),
+      });
+    },
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/assets/${id}`, {
+        method: 'DELETE',
       });
     },
   };

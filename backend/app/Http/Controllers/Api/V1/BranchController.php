@@ -114,5 +114,24 @@ class BranchController extends Controller
             'data' => $branch,
         ]);
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $branch = Branch::withCount('employees')->findOrFail($id);
+
+        if ($branch->employees_count > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete branch with active assigned employees',
+            ], 422);
+        }
+
+        $branch->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Branch deleted successfully',
+        ]);
+    }
 }
 

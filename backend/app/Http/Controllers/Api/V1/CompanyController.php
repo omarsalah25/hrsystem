@@ -89,5 +89,24 @@ class CompanyController extends Controller
             'data' => $company->fresh(['branches', 'departments']),
         ]);
     }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $company = Company::withCount(['employees', 'branches'])->findOrFail($id);
+
+        if ($company->employees_count > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete company with active assigned employees',
+            ], 422);
+        }
+
+        $company->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Company deleted successfully',
+        ]);
+    }
 }
 

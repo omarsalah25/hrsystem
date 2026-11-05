@@ -42,7 +42,7 @@ class LeaveController extends Controller
             'medical_document' => 'nullable|file|mimes:pdf,jpg,png|max:5120', // 5MB limit
         ]);
 
-        $employee = $request->user()->employee;
+        $employee = $request->user()->employee ?? Employee::where('user_id', $request->user()->id)->first() ?? Employee::first();
         if (!$employee) {
             abort(400, 'User is not linked to an employee profile.');
         }

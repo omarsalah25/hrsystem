@@ -153,6 +153,17 @@ export default function AssetsPage() {
     }
   };
 
+  const handleDeleteAsset = async (id: string, name: string) => {
+    if (!confirm(isAr ? `هل أنت متأكد من حذف الأصل (${name})؟` : `Are you sure you want to delete asset ${name}?`)) return;
+    try {
+      await api.assets.delete(id);
+      loadAssets();
+      alert(isAr ? 'تم حذف الأصل بنجاح.' : 'Asset deleted successfully.');
+    } catch (e: any) {
+      alert(e.message || 'Error deleting asset');
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -232,6 +243,7 @@ export default function AssetsPage() {
                 <th className="p-4 text-start font-semibold">{isAr ? 'الموظف المستلم (العهدة)' : 'Assigned Employee'}</th>
                 <th className="p-4 text-start font-semibold">{isAr ? 'تاريخ الشراء' : 'Purchase Date'}</th>
                 <th className="p-4 text-start font-semibold">{isAr ? 'الحالة' : 'Status'}</th>
+                <th className="p-4 text-start font-semibold">{isAr ? 'الإجراء' : 'Action'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -275,6 +287,14 @@ export default function AssetsPage() {
                         ? isAr ? 'متاح للتسليم' : 'Available'
                         : isAr ? 'قيد الصيانة' : 'Maintenance'}
                     </span>
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => handleDeleteAsset(asset.id, asset.name)}
+                      className="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg font-bold text-[11px] transition"
+                    >
+                      {isAr ? 'حذف' : 'Delete'}
+                    </button>
                   </td>
                 </tr>
               ))}

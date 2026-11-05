@@ -35,12 +35,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/companies/{id}', [CompanyController::class, 'show']);
         Route::post('/companies', [CompanyController::class, 'store'])->middleware('role:SUPER_ADMIN');
         Route::match(['put', 'patch'], '/companies/{id}', [CompanyController::class, 'update'])->middleware('role:SUPER_ADMIN');
+        Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->middleware('role:SUPER_ADMIN');
 
         Route::get('/branches', [BranchController::class, 'index']);
         Route::get('/branches/{id}', [BranchController::class, 'show']);
         Route::post('/branches', [BranchController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::match(['put', 'patch'], '/branches/{id}', [BranchController::class, 'update'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::patch('/branches/{id}/geofence', [BranchController::class, 'updateGeofence'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/branches/{id}', [BranchController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Dynamic Org Hierarchy Canvas
         Route::get('/org-chart/hierarchy', [OrgChartController::class, 'hierarchy']);
@@ -98,6 +100,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/assets/{id}', [AssetController::class, 'show']);
         Route::post('/assets/{id}/assign', [AssetController::class, 'assign'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::post('/assets/{id}/return', [AssetController::class, 'returnAsset'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/assets/{id}', [AssetController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Recruitment & ATS Pipeline
         Route::get('/recruitment/openings', [RecruitmentController::class, 'index']);
