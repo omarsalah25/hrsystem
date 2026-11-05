@@ -205,5 +205,67 @@ class DatabaseSeeder extends Seeder
             'currency' => 'EGP',
             'is_current' => true,
         ]);
+
+        // 8. Add Sara Al-Qahtani (HR Operations Lead - Riyadh)
+        $saraEmp = Employee::create([
+            'tenant_id' => $tenant->id,
+            'company_id' => $ksaCompany->id,
+            'branch_id' => $riyadhBranch->id,
+            'department_id' => $techDept->id,
+            'designation_id' => $devRole->id,
+            'employee_number' => 'EMP-SA-002',
+            'first_name' => 'سارة',
+            'middle_name' => 'محمد',
+            'last_name' => 'القحطاني',
+            'work_email' => 'sara.qahtani@futuregroup.com',
+            'phone_number' => '+966559876543',
+            'hire_date' => '2023-08-10',
+            'is_national' => true,
+            'allowed_attendance_mode' => 'BOTH',
+            'biometric_device_user_id' => '1003',
+            'employment_status' => 'ACTIVE',
+        ]);
+
+        EmployeeSalary::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $saraEmp->id,
+            'effective_from' => '2023-08-10',
+            'base_salary' => 15000.00,
+            'housing_allowance' => 3500.00,
+            'transportation_allowance' => 1000.00,
+            'currency' => 'SAR',
+            'is_current' => true,
+        ]);
+
+        // 9. Add Nourhan El-Manshawy (Payroll Lead - Cairo)
+        $nourhanEmp = Employee::create([
+            'tenant_id' => $tenant->id,
+            'company_id' => $egyCompany->id,
+            'branch_id' => $cairoBranch->id,
+            'department_id' => $techDept->id,
+            'designation_id' => $devRole->id,
+            'employee_number' => 'EMP-EG-002',
+            'first_name' => 'نورهان',
+            'middle_name' => 'طارق',
+            'last_name' => 'المنشاوي',
+            'work_email' => 'nourhan.t@futuregroup.com',
+            'phone_number' => '+201287654321',
+            'hire_date' => '2024-02-01',
+            'is_national' => true,
+            'allowed_attendance_mode' => 'BOTH',
+            'biometric_device_user_id' => '1004',
+            'employment_status' => 'ACTIVE',
+        ]);
+
+        EmployeeSalary::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $nourhanEmp->id,
+            'effective_from' => '2024-02-01',
+            'base_salary' => 19000.00,
+            'housing_allowance' => 0.00,
+            'transportation_allowance' => 3000.00,
+            'currency' => 'EGP',
+            'is_current' => true,
+        ]);
     }
 }

@@ -130,3 +130,4 @@ renderOfficialCertificate().catch(err => {
   console.error('Failed to render certificate:', err);
   process.exit(1);
 });
+
