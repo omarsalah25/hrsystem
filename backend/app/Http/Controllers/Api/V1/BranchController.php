@@ -40,14 +40,70 @@ class BranchController extends Controller
         ]);
     }
 
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'company_id' => 'required|uuid|exists:companies,id',
+            'name' => 'required|string|max:100',
+            'address_line' => 'required|string|max:255',
+            'city' => 'required|string|max:100',
+            'timezone' => 'nullable|string|max:50',
+            'geofence_latitude' => 'nullable|numeric|between:-90,90',
+            'geofence_longitude' => 'nullable|numeric|between:-180,180',
+            'geofence_radius_meters' => 'nullable|integer|min:20|max:5000',
+            'attendance_mode' => 'nullable|in:BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH,ANY',
+        ]);
+
+        $validated['tenant_id'] = $request->user()->tenant_id;
+        $validated['timezone'] = $validated['timezone'] ?? 'Asia/Riyadh';
+        $validated['geofence_radius_meters'] = $validated['geofence_radius_meters'] ?? 200;
+        $validated['attendance_mode'] = $validated['attendance_mode'] ?? 'BOTH';
+
+        $branch = Branch::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Branch created successfully',
+            'data' => $branch->load('company'),
+        ], 201);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $branch = Branch::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'string|max:100',
+            'address_line' => 'string|max:255',
+            'city' => 'string|max:100',
+            'timezone' => 'string|max:50',
+            'geofence_latitude' => 'nullable|numeric|between:-90,90',
+            'geofence_longitude' => 'nullable|numeric|between:-180,180',
+            'geofence_radius_meters' => 'integer|min:20|max:5000',
+            'attendance_mode' => 'in:BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH,ANY',
+        ]);
+
+        $branch->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Branch updated successfully',
+            'data' => $branch->fresh('company'),
+        ]);
+    }
+
     public function updateGeofence(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'geofence_latitude' => 'required|numeric|between:-90,90',
             'geofence_longitude' => 'required|numeric|between:-180,180',
             'geofence_radius_meters' => 'required|integer|min:20|max:5000',
-            'attendance_mode' => 'required|in:BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,HYBRID_BOTH',
+            'attendance_mode' => 'required|in:BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH,ANY,HYBRID_BOTH',
         ]);
+
+        if ($validated['attendance_mode'] === 'HYBRID_BOTH') {
+            $validated['attendance_mode'] = 'BOTH';
+        }
 
         $branch = Branch::findOrFail($id);
         $branch->update($validated);

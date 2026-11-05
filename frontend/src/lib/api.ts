@@ -83,6 +83,29 @@ class ApiClient {
     get: async (id: string) => {
       return this.request<{ data: any }>(`/companies/${id}`);
     },
+    create: async (payload: {
+      legal_name: string;
+      trade_name?: string;
+      commercial_registration_no?: string;
+      tax_registration_no?: string;
+      social_insurance_no?: string;
+      wps_employer_id?: string;
+      bank_code?: string;
+      primary_iban?: string;
+      country_code: string;
+      currency: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/companies', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    update: async (id: string, payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/companies/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
   };
 
   public branches = {
@@ -92,6 +115,28 @@ class ApiClient {
     },
     get: async (id: string) => {
       return this.request<{ data: any }>(`/branches/${id}`);
+    },
+    create: async (payload: {
+      company_id: string;
+      name: string;
+      address_line: string;
+      city: string;
+      timezone?: string;
+      geofence_latitude?: number;
+      geofence_longitude?: number;
+      geofence_radius_meters?: number;
+      attendance_mode?: string;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/branches', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    update: async (id: string, payload: any) => {
+      return this.request<{ success: boolean; data: any; message: string }>(`/branches/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
     },
     updateGeofence: async (id: string, payload: {
       geofence_latitude: number;

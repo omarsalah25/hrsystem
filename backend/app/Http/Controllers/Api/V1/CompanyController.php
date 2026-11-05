@@ -36,5 +36,58 @@ class CompanyController extends Controller
             'data' => $company,
         ]);
     }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'legal_name' => 'required|string|max:200',
+            'trade_name' => 'nullable|string|max:150',
+            'commercial_registration_no' => 'nullable|string|max:50',
+            'tax_registration_no' => 'nullable|string|max:50',
+            'social_insurance_no' => 'nullable|string|max:50',
+            'wps_employer_id' => 'nullable|string|max:50',
+            'bank_code' => 'nullable|string|max:20',
+            'primary_iban' => 'nullable|string|max:34',
+            'country_code' => 'required|string|size:3|in:SAU,EGY,UAE,QAT,KWT,BHR,OMN',
+            'currency' => 'required|string|size:3|in:SAR,EGP,AED,QAR,KWD,BHD,OMR,USD',
+        ]);
+
+        $tenantId = $request->user()->tenant_id;
+        $validated['tenant_id'] = $tenantId;
+
+        $company = Company::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Company registered successfully',
+            'data' => $company->load(['branches', 'departments']),
+        ], 201);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $company = Company::findOrFail($id);
+
+        $validated = $request->validate([
+            'legal_name' => 'string|max:200',
+            'trade_name' => 'nullable|string|max:150',
+            'commercial_registration_no' => 'nullable|string|max:50',
+            'tax_registration_no' => 'nullable|string|max:50',
+            'social_insurance_no' => 'nullable|string|max:50',
+            'wps_employer_id' => 'nullable|string|max:50',
+            'bank_code' => 'nullable|string|max:20',
+            'primary_iban' => 'nullable|string|max:34',
+            'country_code' => 'string|size:3|in:SAU,EGY,UAE,QAT,KWT,BHR,OMN',
+            'currency' => 'string|size:3|in:SAR,EGP,AED,QAR,KWD,BHD,OMR,USD',
+        ]);
+
+        $company->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Company updated successfully',
+            'data' => $company->fresh(['branches', 'departments']),
+        ]);
+    }
 }
 

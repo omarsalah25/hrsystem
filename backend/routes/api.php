@@ -33,8 +33,13 @@ Route::prefix('v1')->group(function () {
         // Companies & Branches
         Route::get('/companies', [CompanyController::class, 'index']);
         Route::get('/companies/{id}', [CompanyController::class, 'show']);
+        Route::post('/companies', [CompanyController::class, 'store'])->middleware('role:SUPER_ADMIN');
+        Route::match(['put', 'patch'], '/companies/{id}', [CompanyController::class, 'update'])->middleware('role:SUPER_ADMIN');
+
         Route::get('/branches', [BranchController::class, 'index']);
         Route::get('/branches/{id}', [BranchController::class, 'show']);
+        Route::post('/branches', [BranchController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::match(['put', 'patch'], '/branches/{id}', [BranchController::class, 'update'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::patch('/branches/{id}/geofence', [BranchController::class, 'updateGeofence'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Dynamic Org Hierarchy Canvas
