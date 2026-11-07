@@ -13,8 +13,8 @@ import {
   Building2,
   ArrowRight,
   ArrowLeft,
-  KeyRound,
-  X
+  AlertCircle,
+  KeyRound
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -25,45 +25,35 @@ export default function LoginPage() {
   const [email, setEmail] = useState('admin@hrsystem.com');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
-  const [is2faModalOpen, setIs2faModalOpen] = useState(false);
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Prompt 2FA for privileged admin/HR accounts
-    setIs2faModalOpen(true);
-  };
-
-  const handleConfirmLogin = async () => {
     setIsSubmitting(true);
+    setErrorMessage('');
+
     try {
-      const res = await api.auth.login({ email, password, portal_type: 'COMPANY' });
+      const res = await api.auth.login({ email, password });
       const user = res?.data?.user;
-      if (user?.role === 'EMPLOYEE') {
-        router.push('/self-service');
-      } else {
-        router.push('/');
+
+      if (res?.data?.token) {
+        document.cookie = `hr_token=${res.data.token}; path=/; max-age=86400; SameSite=Lax`;
       }
-    } catch (e) {
-      console.log('Logging in with enterprise local session...');
-      router.push('/');
-    } finally {
+
+      if (user?.role === 'SUPER_ADMIN') {
+        window.location.href = '/admin';
+      } else if (user?.role === 'EMPLOYEE') {
+        window.location.href = '/self-service';
+      } else {
+        window.location.href = '/';
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setErrorMessage(
+        err?.message || (isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password')
+      );
       setIsSubmitting(false);
-      setIs2faModalOpen(false);
-    }
-  };
-
-  const handleOtpChange = (val: string, index: number) => {
-    if (val.length > 1) return;
-    const newOtp = [...otpCode];
-    newOtp[index] = val;
-    setOtpCode(newOtp);
-
-    // Auto focus next input
-    if (val && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
     }
   };
 
@@ -112,47 +102,54 @@ export default function LoginPage() {
               <div className="flex flex-wrap gap-1.5 justify-center">
                 <button
                   type="button"
-                  onClick={() => { setEmail('admin@hrsystem.com'); setPassword('password123'); }}
-                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[10px] font-bold"
+                  onClick={() => { setEmail('admin@hrsystem.com'); setPassword('password123'); setErrorMessage(''); }}
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[10px] font-bold transition"
                 >
                   👑 Admin
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setEmail('hr@hrsystem.com'); setPassword('password123'); }}
-                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded text-[10px] font-bold"
+                  onClick={() => { setEmail('hr@hrsystem.com'); setPassword('password123'); setErrorMessage(''); }}
+                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded text-[10px] font-bold transition"
                 >
                   👥 HR Lead
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setEmail('payroll@hrsystem.com'); setPassword('password123'); }}
-                  className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[10px] font-bold"
+                  onClick={() => { setEmail('payroll@hrsystem.com'); setPassword('password123'); setErrorMessage(''); }}
+                  className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[10px] font-bold transition"
                 >
                   💰 Payroll
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setEmail('auditor@hrsystem.com'); setPassword('password123'); }}
-                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold"
+                  onClick={() => { setEmail('auditor@hrsystem.com'); setPassword('password123'); setErrorMessage(''); }}
+                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold transition"
                 >
                   🔍 Auditor
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setEmail('employee@hrsystem.com'); setPassword('password123'); }}
-                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold"
+                  onClick={() => { setEmail('employee@hrsystem.com'); setPassword('password123'); setErrorMessage(''); }}
+                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold transition"
                 >
-                  👤 Employee
+                  📱 Employee
                 </button>
               </div>
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">البريد الإلكتروني للعمل</label>
+              <label className="block font-semibold text-slate-700 mb-1">البريد الإلكتروني الوظيفي</label>
               <div className="relative">
                 <Mail className={`w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'}`} />
                 <input
@@ -160,6 +157,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
                   className={`w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none ${
                     isRtl ? 'pr-9 pl-4' : 'pl-9 pr-4'
                   }`}
@@ -170,7 +168,13 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="font-semibold text-slate-700">كلمة المرور</label>
-                <a href="#" className="text-blue-600 hover:underline text-[11px] font-semibold">نسيت كلمة المرور؟</a>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-blue-600 hover:underline text-[11px] font-semibold"
+                >
+                  {showPassword ? (isAr ? 'إخفاء' : 'Hide') : (isAr ? 'إظهار' : 'Show')}
+                </button>
               </div>
               <div className="relative">
                 <Lock className={`w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'}`} />
@@ -195,9 +199,17 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-blue-600/20"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              تسجيل الدخول (Sign In)
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>{isAr ? 'جاري التحقق وتسجيل الدخول...' : 'Signing in...'}</span>
+                </>
+              ) : (
+                <span>{isAr ? 'تسجيل الدخول (Sign In)' : 'Sign In'}</span>
+              )}
             </button>
 
             {/* Portal Switch Link */}
@@ -219,52 +231,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* 2FA Modal */}
-      {is2faModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center mb-3">
-              <KeyRound className="w-6 h-6" />
-            </div>
-
-            <h3 className="text-base font-bold text-slate-900">التحقق بخطوتين (2FA Verification)</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-              يرجى إدخال رمز التحقق المكون من 6 أرقام من تطبيق Authenticator الخاص بك
-            </p>
-
-            {/* 6 Digit Inputs */}
-            <div className="flex justify-center gap-2 my-6" dir="ltr">
-              {otpCode.map((digit, idx) => (
-                <input
-                  key={idx}
-                  id={`otp-${idx}`}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(e.target.value, idx)}
-                  className="w-11 h-12 text-center text-lg font-black bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none"
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={handleConfirmLogin}
-              disabled={isSubmitting}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-blue-600/20 disabled:opacity-50"
-            >
-              {isSubmitting ? (isAr ? 'جاري التحقق والمصادقة...' : 'Verifying...') : (isAr ? 'تأكيد الدخول إلى لوحة القيادة' : 'Confirm & Enter Dashboard')}
-            </button>
-
-            <button
-              onClick={() => setIs2faModalOpen(false)}
-              className="mt-3 text-xs text-slate-400 hover:text-slate-600 font-bold"
-            >
-              إلغاء والعودة
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <footer className="text-center text-xs text-slate-400">
         &copy; 2026 HRSystem Cloud. جميع الحقوق محفوظة لشركات المملكة العربية السعودية ومصر.
@@ -272,4 +238,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
