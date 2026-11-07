@@ -132,9 +132,9 @@ Route::prefix('v1')->group(function () {
         // Cryptographic Hash-Chained Audit Trail
         Route::get('/audit/logs', [AuditController::class, 'index'])->middleware('role:SUPER_ADMIN,AUDITOR,HR_MANAGER');
         Route::get('/audit/verify-chain', [AuditController::class, 'verifyChain'])->middleware('role:SUPER_ADMIN,AUDITOR,HR_MANAGER');
-
-        // Secure Document Vault (Local Storage)
-        Route::get('/documents/payslips/{id}/download', [SecureDocumentController::class, 'downloadPayslip']);
-        Route::get('/documents/certificates/{id}/download', [SecureDocumentController::class, 'downloadCertificate']);
     });
+
+    // Secure Document Vault (Local Private Storage with Optional / Query Token Support)
+    Route::get('/documents/payslips/{id}/download', [SecureDocumentController::class, 'downloadPayslip']);
+    Route::get('/documents/certificates/{id}/download', [SecureDocumentController::class, 'downloadCertificate']);
 });

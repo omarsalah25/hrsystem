@@ -321,7 +321,8 @@ class ApiClient {
       });
     },
     exportWps: (runId: string) => {
-      const url = `${API_BASE_URL}/payroll/runs/${runId}/export-wps`;
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('hr_token') || '') : '';
+      const url = `${API_BASE_URL}/payroll/runs/${runId}/export-wps?token=${encodeURIComponent(token)}`;
       window.open(url, '_blank');
     },
   };
@@ -476,12 +477,14 @@ class ApiClient {
   // Secure Documents
   public documents = {
     downloadPayslip: (payslipId: string) => {
-      const url = `${API_BASE_URL}/documents/payslips/${payslipId}/download`;
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('hr_token') || '') : '';
+      const url = `${API_BASE_URL}/documents/payslips/${payslipId}/download?token=${encodeURIComponent(token)}`;
       window.open(url, '_blank');
     },
     downloadCertificate: (certId: string) => {
-      const url = `${API_BASE_URL}/documents/certificates/${certId}/download`;
-      window.open(url, '_blank')
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('hr_token') || '') : '';
+      const url = `${API_BASE_URL}/documents/certificates/${certId}/download?token=${encodeURIComponent(token)}`;
+      window.open(url, '_blank');
     },
   };
 
