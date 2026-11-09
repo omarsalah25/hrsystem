@@ -615,6 +615,37 @@ class ApiClient {
       return this.request<{ success: boolean; data: any }>('/org-chart/hierarchy');
     },
   };
+
+  // Dynamic Users & RBAC Permissions Management
+  public users = {
+    list: async () => {
+      return this.request<{ success: boolean; data: any[] }>('/users');
+    },
+    create: async (payload: {
+      name: string;
+      email: string;
+      password?: string;
+      role: string;
+      custom_permissions?: string[];
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    updatePermissions: async (
+      id: string | number,
+      payload: { role?: string; custom_permissions: string[] }
+    ) => {
+      return this.request<{ success: boolean; data: any; message: string }>(
+        `/users/${id}/permissions`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        }
+      );
+    },
+  };
 }
 
 export const api = new ApiClient();

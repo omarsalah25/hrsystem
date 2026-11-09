@@ -16,6 +16,7 @@ class User extends Authenticatable
     protected $fillable = [
         'tenant_id',
         'role',
+        'custom_permissions',
         'name',
         'email',
         'password',
@@ -36,6 +37,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'is_two_factor_enabled' => 'boolean',
+            'custom_permissions' => 'array',
             'password' => 'hashed',
         ];
     }

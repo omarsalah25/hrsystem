@@ -2,6 +2,7 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { Network, Users, ChevronDown, Building, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -115,6 +116,7 @@ export default function OrgChartPage() {
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
   const [liveOrg, setLiveOrg] = React.useState<any>(null);
+  const [isLoadingOrg, setIsLoadingOrg] = React.useState(true);
 
   React.useEffect(() => {
     api.orgChart.hierarchy()
@@ -125,8 +127,19 @@ export default function OrgChartPage() {
       })
       .catch((err: any) => {
         console.warn('Failed to load org chart hierarchy:', err);
+      })
+      .finally(() => {
+        setIsLoadingOrg(false);
       });
   }, []);
+
+  if (isLoadingOrg) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="cards" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

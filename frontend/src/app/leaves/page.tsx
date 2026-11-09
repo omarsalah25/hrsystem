@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
@@ -37,6 +38,7 @@ export default function LeavesPage() {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState(true);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [newLeave, setNewLeave] = useState({
     leave_type_id: '',
@@ -111,6 +113,9 @@ export default function LeavesPage() {
       })
       .catch((err) => {
         console.warn('Could not fetch leaves from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingLeaves(false);
       });
   };
 
@@ -161,6 +166,14 @@ export default function LeavesPage() {
       setSubmitting(false);
     }
   };
+
+  if (isLoadingLeaves) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={5} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

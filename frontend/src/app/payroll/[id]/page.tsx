@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import {
   CreditCard,
   Building,
@@ -101,12 +102,7 @@ export default function PayrollBatchDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-600 font-medium">جاري استرجاع بيانات مسير الرواتب والعمليات البنكية...</p>
-          </div>
-        </div>
+        <PageSkeleton variant="detail" />
       </DashboardLayout>
     );
   }

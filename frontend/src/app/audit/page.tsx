@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
 import {
@@ -45,6 +46,7 @@ export default function AuditPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [chainIntegrity, setChainIntegrity] = useState(true);
   const [verifyBanner, setVerifyBanner] = useState<string | null>(null);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(true);
 
   const [logs, setLogs] = useState<AuditLog[]>([
     {
@@ -112,6 +114,9 @@ export default function AuditPage() {
       })
       .catch((err: any) => {
         console.warn('Could not fetch audit logs from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingAudit(false);
       });
   }, []);
 
@@ -166,6 +171,14 @@ export default function AuditPage() {
         : '📄 Exported cryptographic audit ledger (CSV) successfully'
     );
   };
+
+  if (isLoadingAudit) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={6} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

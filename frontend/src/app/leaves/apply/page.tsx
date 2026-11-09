@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton, usePageSkeleton } from '@/components/ui/skeleton';
 import {
   Calendar,
   ArrowRight,
@@ -63,6 +64,7 @@ const STATUTORY_LEAVE_TYPES = [
 
 export default function ApplyLeavePage() {
   const router = useRouter();
+  const { isSkeletonLoading } = usePageSkeleton(200);
 
   const [selectedType, setSelectedType] = useState('ANNUAL');
   const [startDate, setStartDate] = useState('');
@@ -132,6 +134,14 @@ export default function ApplyLeavePage() {
   };
 
   const currentTypeInfo = STATUTORY_LEAVE_TYPES.find(t => t.id === selectedType);
+
+  if (isSkeletonLoading) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="form" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

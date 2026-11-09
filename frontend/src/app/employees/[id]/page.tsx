@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
+import { RolePermissionsPicker } from '@/components/ui/role-permissions-picker';
+import { RoleType } from '@/lib/permissions';
 import {
   User,
   Shield,
@@ -40,6 +43,8 @@ export default function EmployeeProfilePage() {
     phone_number: '',
     allowed_attendance_mode: 'BOTH',
     employment_status: 'ACTIVE',
+    role: 'EMPLOYEE' as RoleType,
+    custom_permissions: [] as string[],
   });
 
   const loadData = React.useCallback(async () => {
@@ -55,6 +60,10 @@ export default function EmployeeProfilePage() {
           phone_number: res.data.phone_number || '',
           allowed_attendance_mode: res.data.allowed_attendance_mode || 'BOTH',
           employment_status: res.data.employment_status || 'ACTIVE',
+          role: (res.data.user?.role as RoleType) || 'EMPLOYEE',
+          custom_permissions: Array.isArray(res.data.user?.custom_permissions)
+            ? res.data.user.custom_permissions
+            : [],
         });
       }
     } catch (err) {
@@ -96,12 +105,7 @@ export default function EmployeeProfilePage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-600 font-medium">جاري تحميل الملف الشامل للموظف (360° Profile)...</p>
-          </div>
-        </div>
+        <PageSkeleton variant="detail" />
       </DashboardLayout>
     );
   }
@@ -757,6 +761,18 @@ export default function EmployeeProfilePage() {
                     <option value="OFFBOARDED">منتهي الخدمة</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 max-h-80 overflow-y-auto">
+                <RolePermissionsPicker
+                  role={editFormData.role || 'EMPLOYEE'}
+                  onRoleChange={(r) => setEditFormData({ ...editFormData, role: r })}
+                  customPermissions={editFormData.custom_permissions || []}
+                  onCustomPermissionsChange={(perms) =>
+                    setEditFormData({ ...editFormData, custom_permissions: perms })
+                  }
+                  compact
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">

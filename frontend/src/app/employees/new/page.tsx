@@ -3,6 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Card, Button, Tag } from 'antd';
+import { PageSkeleton } from '@/components/ui/skeleton';
+import { RolePermissionsPicker } from '@/components/ui/role-permissions-picker';
+import { RoleType, ROLE_LABELS, getEffectivePermissions } from '@/lib/permissions';
 import {
   UserPlus,
   ArrowRight,
@@ -19,6 +23,7 @@ export default function NewEmployeePage() {
   const router = useRouter();
 
   const [step, setStep] = useState(1);
+  const [metaLoading, setMetaLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -52,11 +57,15 @@ export default function NewEmployeePage() {
     transportation_allowance: 1000,
     other_allowances: 0,
     currency: 'SAR',
+    role: 'EMPLOYEE' as RoleType,
+    custom_permissions: [] as string[],
+    password: 'password123',
   });
 
   useEffect(() => {
     async function loadMeta() {
       try {
+        setMetaLoading(true);
         const compRes = await api.companies.list();
         if (compRes?.data) {
           setCompanies(compRes.data);
@@ -77,6 +86,8 @@ export default function NewEmployeePage() {
         }
       } catch (e) {
         console.error('Error loading metadata:', e);
+      } finally {
+        setMetaLoading(false);
       }
     }
     loadMeta();
@@ -118,6 +129,14 @@ export default function NewEmployeePage() {
       setLoading(false);
     }
   };
+
+  if (metaLoading) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="form" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -319,6 +338,18 @@ export default function NewEmployeePage() {
                   <option value="INTERN">تدريب تعاوني / متدرب</option>
                 </select>
               </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <RolePermissionsPicker
+                role={formData.role}
+                onRoleChange={(r) => setFormData((prev) => ({ ...prev, role: r }))}
+                customPermissions={formData.custom_permissions}
+                onCustomPermissionsChange={(perms) =>
+                  setFormData((prev) => ({ ...prev, custom_permissions: perms }))
+                }
+                compact
+              />
             </div>
 
             <div className="flex justify-end pt-4">
@@ -554,11 +585,18 @@ export default function NewEmployeePage() {
               </div>
 
               <div className="space-y-3 pt-3 md:pt-0 md:pr-4">
-                <h4 className="font-bold text-slate-700">الامتثال والتعويضات:</h4>
+                <h4 className="font-bold text-slate-700">الامتثال والتعويضات والصلاحيات:</h4>
                 <p className="text-slate-600"><span className="font-semibold text-slate-800">الهوية الوطنية / الإقامة:</span> {formData.national_id}</p>
                 <p className="text-slate-600"><span className="font-semibold text-slate-800">الجنسية:</span> {formData.nationality}</p>
                 <p className="text-slate-600"><span className="font-semibold text-slate-800">الراتب الأساسي:</span> {formData.base_salary.toLocaleString()} {formData.currency}</p>
                 <p className="text-slate-600"><span className="font-semibold text-slate-800">إجمالي الراتب:</span> {(formData.base_salary + formData.housing_allowance + formData.transportation_allowance).toLocaleString()} {formData.currency}</p>
+                <p className="text-slate-600">
+                  <span className="font-semibold text-slate-800">الدور الوظيفي والصلاحيات:</span>{' '}
+                  <Tag color="blue">{ROLE_LABELS[formData.role]?.ar}</Tag>
+                  <Tag color="success">
+                    {getEffectivePermissions(formData.role, formData.custom_permissions).length} صلاحية فعالة (+{formData.custom_permissions.filter(p => !p.startsWith('-')).length} إضافية)
+                  </Tag>
+                </p>
               </div>
             </div>
 

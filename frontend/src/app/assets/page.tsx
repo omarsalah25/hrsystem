@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
 import {
@@ -72,6 +73,7 @@ export default function AssetsPage() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const [newAsset, setNewAsset] = useState({
     company_id: '',
     asset_code: '',
@@ -122,6 +124,8 @@ export default function AssetsPage() {
       }
     } catch (err) {
       console.warn('Failed to load assets from API:', err);
+    } finally {
+      setIsLoadingAssets(false);
     }
   };
 
@@ -163,6 +167,14 @@ export default function AssetsPage() {
       alert(e.message || 'Error deleting asset');
     }
   };
+
+  if (isLoadingAssets) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={5} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

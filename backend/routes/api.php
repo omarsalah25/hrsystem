@@ -140,6 +140,62 @@ Route::prefix('v1')->group(function () {
         // Cryptographic Hash-Chained Audit Trail
         Route::get('/audit/logs', [AuditController::class, 'index'])->middleware('role:SUPER_ADMIN,AUDITOR,HR_MANAGER');
         Route::get('/audit/verify-chain', [AuditController::class, 'verifyChain'])->middleware('role:SUPER_ADMIN,AUDITOR,HR_MANAGER');
+
+        // Dynamic User & Role Permissions Management
+        Route::get('/users', function (\Illuminate\Http\Request $request) {
+            $users = \App\Models\User::with(['employee.department', 'employee.designation'])
+                ->where('tenant_id', $request->user()->tenant_id)
+                ->orderBy('id')
+                ->get();
+            return response()->json(['success' => true, 'data' => $users]);
+        });
+
+        Route::post('/users', function (\Illuminate\Http\Request $request) {
+            $validated = $request->validate([
+                'name' => 'required|string|max:150',
+                'email' => 'required|email|max:191|unique:users,email',
+                'password' => 'nullable|string|min:6',
+                'role' => 'required|string|in:SUPER_ADMIN,HR_MANAGER,PAYROLL_OFFICER,AUDITOR,DEPARTMENT_MANAGER,LINE_MANAGER,EMPLOYEE',
+                'custom_permissions' => 'nullable|array',
+                'custom_permissions.*' => 'string',
+            ]);
+
+            $user = \App\Models\User::create([
+                'tenant_id' => $request->user()->tenant_id,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => \Illuminate\Support\Facades\Hash::make($validated['password'] ?? 'password123'),
+                'role' => $validated['role'],
+                'custom_permissions' => $validated['custom_permissions'] ?? [],
+                'status' => 'ACTIVE',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User created with custom permissions successfully',
+                'data' => $user,
+            ], 201);
+        })->middleware('role:SUPER_ADMIN,HR_MANAGER');
+
+        Route::patch('/users/{id}/permissions', function (\Illuminate\Http\Request $request, string $id) {
+            $user = \App\Models\User::findOrFail($id);
+            $validated = $request->validate([
+                'role' => 'nullable|string|in:SUPER_ADMIN,HR_MANAGER,PAYROLL_OFFICER,AUDITOR,DEPARTMENT_MANAGER,LINE_MANAGER,EMPLOYEE',
+                'custom_permissions' => 'nullable|array',
+                'custom_permissions.*' => 'string',
+            ]);
+
+            $user->update([
+                'role' => $validated['role'] ?? $user->role,
+                'custom_permissions' => $validated['custom_permissions'] ?? [],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User role and dynamic permissions updated successfully',
+                'data' => $user,
+            ]);
+        })->middleware('role:SUPER_ADMIN,HR_MANAGER');
     });
 
     // Secure Document Vault (Local Private Storage with Optional / Query Token Support)

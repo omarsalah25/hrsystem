@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
 import {
@@ -31,6 +32,7 @@ export default function RecruitmentPage() {
   const [openings, setOpenings] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [isAddOpeningOpen, setIsAddOpeningOpen] = useState(false);
+  const [isLoadingRecruitment, setIsLoadingRecruitment] = useState(true);
   const [newOpening, setNewOpening] = useState({
     department_id: '',
     title_ar: '',
@@ -46,7 +48,7 @@ export default function RecruitmentPage() {
       if (res?.data && res.data.length > 0) {
         setOpenings(res.data);
       }
-    }).catch(console.error);
+    }).catch(console.error).finally(() => setIsLoadingRecruitment(false));
   };
 
   useEffect(() => {
@@ -133,6 +135,14 @@ export default function RecruitmentPage() {
       })
     );
   };
+
+  if (isLoadingRecruitment) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="cards" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

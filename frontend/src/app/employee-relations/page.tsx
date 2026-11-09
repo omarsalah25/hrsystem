@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
@@ -53,6 +54,7 @@ export default function EmployeeRelationsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [isLoadingGrievances, setIsLoadingGrievances] = useState(true);
   const [formData, setFormData] = useState({
     category: 'WORKPLACE_ENVIRONMENT',
     severity: 'MEDIUM',
@@ -87,6 +89,9 @@ export default function EmployeeRelationsPage() {
       })
       .catch((err) => {
         console.warn('Failed to load grievances from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingGrievances(false);
       });
   };
 
@@ -117,6 +122,14 @@ export default function EmployeeRelationsPage() {
       setSubmitting(false);
     }
   };
+
+  if (isLoadingGrievances) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={5} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -19,7 +19,7 @@ class EmployeeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::with(['department', 'designation', 'branch', 'company', 'currentSalary']);
+        $query = Employee::with(['department', 'designation', 'branch', 'company', 'currentSalary', 'user']);
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
@@ -95,18 +95,25 @@ class EmployeeController extends Controller
             'transportation_allowance' => 'nullable|numeric|min:0',
             'other_allowances' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|size:3',
+
+            // Role & Dynamic User Permissions
+            'role' => 'nullable|string|in:SUPER_ADMIN,HR_MANAGER,PAYROLL_OFFICER,AUDITOR,DEPARTMENT_MANAGER,LINE_MANAGER,EMPLOYEE',
+            'custom_permissions' => 'nullable|array',
+            'custom_permissions.*' => 'string',
+            'password' => 'nullable|string|min:6',
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
             $tenantId = $request->user()->tenant_id;
 
-            // 1. Create User account for employee
+            // 1. Create User account for employee with role & dynamic permissions
             $user = User::create([
                 'tenant_id' => $tenantId,
-                'role' => 'EMPLOYEE',
+                'role' => $validated['role'] ?? 'EMPLOYEE',
+                'custom_permissions' => $validated['custom_permissions'] ?? [],
                 'name' => trim("{$validated['first_name']} {$validated['last_name']}"),
                 'email' => $validated['work_email'],
-                'password' => Hash::make(Str::random(12)),
+                'password' => Hash::make($validated['password'] ?? 'password123'),
                 'status' => 'ACTIVE',
             ]);
 
@@ -177,6 +184,7 @@ class EmployeeController extends Controller
             'manager',
             'currentSalary',
             'profile',
+            'user',
             'assetAssignments.asset',
             'okrGoals',
             'attendanceRecords' => fn($q) => $q->latest('date')->limit(15),
@@ -225,14 +233,28 @@ class EmployeeController extends Controller
             'branch_id' => 'nullable|uuid|exists:branches,id',
             'allowed_attendance_mode' => 'in:DEFAULT,BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH',
             'employment_status' => 'in:PROSPECT,ONBOARDING,PROBATIONARY,ACTIVE,ON_LEAVE,SUSPENDED,NOTICE_PERIOD,OFFBOARDED',
+            'role' => 'nullable|string|in:SUPER_ADMIN,HR_MANAGER,PAYROLL_OFFICER,AUDITOR,DEPARTMENT_MANAGER,LINE_MANAGER,EMPLOYEE',
+            'custom_permissions' => 'nullable|array',
+            'custom_permissions.*' => 'string',
         ]);
 
         $employee->update($validated);
 
+        if ($employee->user && (isset($validated['role']) || array_key_exists('custom_permissions', $validated))) {
+            $userUpdates = [];
+            if (isset($validated['role'])) {
+                $userUpdates['role'] = $validated['role'];
+            }
+            if (array_key_exists('custom_permissions', $validated)) {
+                $userUpdates['custom_permissions'] = $validated['custom_permissions'] ?? [];
+            }
+            $employee->user->update($userUpdates);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Employee details updated successfully',
-            'data' => $employee->load(['department', 'designation', 'branch']),
+            'data' => $employee->load(['department', 'designation', 'branch', 'user']),
         ]);
     }
 

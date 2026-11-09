@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
 import {
@@ -40,6 +41,7 @@ export default function ShiftsPage() {
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(true);
   const [newShift, setNewShift] = useState({
     name_ar: '',
     name_en: '',
@@ -122,6 +124,9 @@ export default function ShiftsPage() {
       })
       .catch((err) => {
         console.warn('Could not fetch shifts from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingShifts(false);
       });
   };
 
@@ -163,6 +168,14 @@ export default function ShiftsPage() {
     { ar: 'الجمعة (عطلة)', en: 'Friday (Off)' },
     { ar: 'السبت (عطلة)', en: 'Saturday (Off)' },
   ];
+
+  if (isLoadingShifts) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="cards" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

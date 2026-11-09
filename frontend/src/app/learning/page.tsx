@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
@@ -78,6 +79,7 @@ export default function LearningPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [isLoadingLearning, setIsLoadingLearning] = useState(true);
   const [newCourse, setNewCourse] = useState({
     title: '',
     category: 'امتثال إلزامي (Compliance)',
@@ -111,6 +113,9 @@ export default function LearningPage() {
       })
       .catch((err) => {
         console.warn('Could not fetch courses from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingLearning(false);
       });
   };
 
@@ -165,6 +170,14 @@ export default function LearningPage() {
       status: 'VALID',
     },
   ];
+
+  if (isLoadingLearning) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="cards" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

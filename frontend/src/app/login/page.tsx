@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Skeleton as AntdSkeleton } from 'antd';
+import { usePageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
 import {
@@ -20,6 +22,7 @@ import {
 export default function LoginPage() {
   const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
+  const { isSkeletonLoading } = usePageSkeleton(150);
   const isAr = locale === 'ar';
 
   const [email, setEmail] = useState('admin@hrsystem.com');
@@ -83,6 +86,12 @@ export default function LoginPage() {
       {/* Center Auth Card */}
       <div className="max-w-md w-full mx-auto my-8">
         <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50">
+          {isSkeletonLoading ? (
+            <div data-testid="page-skeleton" data-slot="skeleton">
+              <AntdSkeleton active avatar paragraph={{ rows: 5 }} />
+            </div>
+          ) : (
+            <>
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-bold text-[11px] mb-3">
@@ -228,6 +237,8 @@ export default function LoginPage() {
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>اتصال مشفر بتشفير SSL/TLS 256-bit مطابق للمعايير الحكومية</span>
           </div>
+            </>
+          )}
         </div>
       </div>
 

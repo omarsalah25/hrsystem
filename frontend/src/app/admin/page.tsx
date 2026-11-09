@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
@@ -209,6 +210,10 @@ export default function PlatformAdminDashboardPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+        {isLoading ? (
+          <PageSkeleton variant="dashboard" />
+        ) : (
+          <>
         {/* Banner Section */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-900 p-6 sm:p-8 border border-indigo-900/50 shadow-2xl">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -575,6 +580,8 @@ export default function PlatformAdminDashboardPage() {
             </div>
           )}
         </div>
+          </>
+        )}
       </main>
 
       {/* Modal: Add Legal Entity */}

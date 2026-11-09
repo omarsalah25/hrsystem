@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
 import './globals.css';
 import { TranslationProvider } from '@/lib/translations';
 
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body>
-        <TranslationProvider>
-          {children}
-        </TranslationProvider>
+        <AntdRegistry>
+          <TranslationProvider>
+            {children}
+          </TranslationProvider>
+        </AntdRegistry>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
@@ -20,7 +21,7 @@ import {
 export default function AttendancePage() {
   const { t, locale } = useTranslation();
   const { can } = usePermissions();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(true);
   const [isReconciling, setIsReconciling] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -63,6 +64,14 @@ export default function AttendancePage() {
       setIsReconciling(false);
     }
   };
+
+  if (isRefreshing && attendanceRecords.length === 0) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={5} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

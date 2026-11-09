@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton, usePageSkeleton } from '@/components/ui/skeleton';
 import {
   GraduationCap,
   ArrowRight,
@@ -21,6 +22,7 @@ export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params?.id as string;
+  const { isSkeletonLoading } = usePageSkeleton(200);
 
   const [course, setCourse] = useState<any>({
     id: courseId,
@@ -40,6 +42,14 @@ export default function CourseDetailPage() {
   ]);
 
   const [selectedCert, setSelectedCert] = useState<any>(null);
+
+  if (isSkeletonLoading) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="detail" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

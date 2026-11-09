@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { ConfigProvider } from 'antd';
 import arMessages from '../messages/ar.json';
 import enMessages from '../messages/en.json';
 
@@ -53,7 +54,17 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isRtl: locale === 'ar',
       }}
     >
-      {children}
+      <ConfigProvider
+        direction={locale === 'ar' ? 'rtl' : 'ltr'}
+        theme={{
+          token: {
+            colorPrimary: '#2563eb',
+            borderRadius: 12,
+          },
+        }}
+      >
+        {children}
+      </ConfigProvider>
     </TranslationContext.Provider>
   );
 };

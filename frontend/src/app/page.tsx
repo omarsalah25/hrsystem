@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
@@ -53,30 +54,32 @@ export default function DashboardPage() {
   });
 
   const [dashboardEmployees, setDashboardEmployees] = useState<any[]>([]);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
 
   React.useEffect(() => {
-    // 1. Fetch Headcount Report
-    api.reports.headcount()
-      .then((res: any) => {
-        if (res?.data) {
-          setHeadcountData(res.data);
-        }
-      })
-      .catch(() => {});
-
-    // 2. Fetch Recent Employees
-    api.employees.list({ per_page: 5 })
-      .then((res: any) => {
-        const rawItems = Array.isArray(res?.data)
-          ? res.data
-          : Array.isArray(res?.data?.data)
-          ? res.data.data
-          : [];
-        if (rawItems.length > 0) {
-          setDashboardEmployees(rawItems);
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      api.reports.headcount()
+        .then((res: any) => {
+          if (res?.data) {
+            setHeadcountData(res.data);
+          }
+        })
+        .catch(() => {}),
+      api.employees.list({ per_page: 5 })
+        .then((res: any) => {
+          const rawItems = Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res?.data?.data)
+            ? res.data.data
+            : [];
+          if (rawItems.length > 0) {
+            setDashboardEmployees(rawItems);
+          }
+        })
+        .catch(() => {}),
+    ]).finally(() => {
+      setIsLoadingDashboard(false);
+    });
   }, []);
 
   const handlePunch = async (type: 'IN' | 'OUT') => {
@@ -144,6 +147,14 @@ export default function DashboardPage() {
   };
 
   const simResult = computePayrollSim();
+
+  if (isLoadingDashboard) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="dashboard" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

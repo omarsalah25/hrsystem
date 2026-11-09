@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
@@ -114,8 +115,10 @@ export default function EmployeesPage() {
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [activeModalEmployee, setActiveModalEmployee] = useState<EmployeeItem | null>(null);
   const [employeesList, setEmployeesList] = useState<EmployeeItem[]>(sampleEmployees);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
 
   const fetchEmployees = React.useCallback(() => {
+    setIsLoadingEmployees(true);
     api.employees.list({ per_page: 'all' })
       .then((res: any) => {
         const rawItems = Array.isArray(res?.data)
@@ -146,6 +149,9 @@ export default function EmployeesPage() {
       })
       .catch((err) => {
         console.warn('Could not fetch real employees list, using defaults:', err);
+      })
+      .finally(() => {
+        setIsLoadingEmployees(false);
       });
   }, []);
 
@@ -180,6 +186,14 @@ export default function EmployeesPage() {
 
     return matchesSearch && matchesBranch;
   });
+
+  if (isLoadingEmployees) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={6} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

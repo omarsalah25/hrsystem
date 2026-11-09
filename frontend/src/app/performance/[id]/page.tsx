@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import {
   Target,
   ArrowRight,
@@ -84,12 +85,7 @@ export default function PerformanceAppraisalDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-600 font-medium">جاري استرجاع نموذج تقييم الأداء السنوي (360° Appraisal)...</p>
-          </div>
-        </div>
+        <PageSkeleton variant="detail" />
       </DashboardLayout>
     );
   }

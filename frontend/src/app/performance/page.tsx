@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
@@ -35,6 +36,7 @@ export default function PerformancePage() {
   const [activeTab, setActiveTab] = useState<'okrs' | 'ninebox' | 'reviews'>('okrs');
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [isLoadingPerformance, setIsLoadingPerformance] = useState(true);
   const [newGoal, setNewGoal] = useState({
     employee_id: '',
     title: '',
@@ -96,6 +98,9 @@ export default function PerformancePage() {
       })
       .catch((err) => {
         console.warn('Failed to load performance goals from API:', err);
+      })
+      .finally(() => {
+        setIsLoadingPerformance(false);
       });
   };
 
@@ -124,6 +129,14 @@ export default function PerformancePage() {
       alert(err.message || 'Error creating goal');
     }
   };
+
+  if (isLoadingPerformance) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="cards" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

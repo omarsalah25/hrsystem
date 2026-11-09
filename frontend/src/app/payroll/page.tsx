@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
@@ -46,6 +47,7 @@ export default function PayrollPage() {
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const [isLoadingPayroll, setIsLoadingPayroll] = useState(true);
 
   const [employeesPayroll, setEmployeesPayroll] = useState<PayslipPreviewData[]>([
     {
@@ -128,7 +130,7 @@ export default function PayrollPage() {
           }
         }).catch(() => {});
       }
-    }).catch(console.error);
+    }).catch(console.error).finally(() => setIsLoadingPayroll(false));
   };
 
   useEffect(() => {
@@ -156,6 +158,14 @@ export default function PayrollPage() {
       setTimeout(() => setFeedbackMsg(null), 4000);
     }
   };
+
+  if (isLoadingPayroll) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="table" rows={5} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

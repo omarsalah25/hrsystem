@@ -4,6 +4,14 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
+import { Card, Button, Tag, Modal } from 'antd';
+import { PageSkeleton } from '@/components/ui/skeleton';
+import { RolePermissionsPicker } from '@/components/ui/role-permissions-picker';
+import {
+  RoleType,
+  ROLE_LABELS,
+  getEffectivePermissions,
+} from '@/lib/permissions';
 import {
   Settings,
   Building2,
@@ -14,7 +22,9 @@ import {
   Globe2,
   Save,
   Plus,
-  X
+  X,
+  UserPlus,
+  Users
 } from 'lucide-react';
 
 interface BiometricDevice {
@@ -71,21 +81,150 @@ export default function SettingsPage() {
   const [newDeviceIp, setNewDeviceIp] = useState('192.168.1.145');
   const [newDeviceBranch, setNewDeviceBranch] = useState('🇸🇦 فرع جدة الغربي');
 
+  // Dynamic User & RBAC State
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | number>('');
+  const [editingRole, setEditingRole] = useState<RoleType>('EMPLOYEE');
+  const [editingCustomPermissions, setEditingCustomPermissions] = useState<string[]>([]);
+  const [isSavingUserPerms, setIsSavingUserPerms] = useState(false);
+
+  // Create New User Modal State
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('password123');
+  const [newUserRole, setNewUserRole] = useState<RoleType>('EMPLOYEE');
+  const [newUserCustomPermissions, setNewUserCustomPermissions] = useState<string[]>([]);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const loadUsers = async () => {
+    try {
+      const res: any = await api.users.list();
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setUsersList(list);
+      if (list.length > 0 && !selectedUserId) {
+        const defaultTarget = list.find((u: any) => u.role === 'EMPLOYEE') || list[0];
+        setSelectedUserId(defaultTarget.id);
+        setEditingRole((defaultTarget.role as RoleType) || 'EMPLOYEE');
+        setEditingCustomPermissions(
+          Array.isArray(defaultTarget.custom_permissions) ? defaultTarget.custom_permissions : []
+        );
+      }
+    } catch {}
+  };
+
   useEffect(() => {
-    api.companies
-      .list()
-      .then((res: any) => {
-        const list = Array.isArray(res?.data) ? res.data : [];
-        if (list.length > 0) {
-          const first = list[0];
-          setCompanyId(first.id || '');
-          if (first.name_ar) setCompanyName(first.name_ar);
-          if (first.commercial_registration) setCrNumber(first.commercial_registration);
-          if (first.tax_id) setTaxId(first.tax_id);
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      api.companies
+        .list()
+        .then((res: any) => {
+          const list = Array.isArray(res?.data) ? res.data : [];
+          if (list.length > 0) {
+            const first = list[0];
+            setCompanyId(first.id || '');
+            if (first.name_ar) setCompanyName(first.name_ar);
+            if (first.commercial_registration) setCrNumber(first.commercial_registration);
+            if (first.tax_id) setTaxId(first.tax_id);
+          }
+        })
+        .catch(() => {}),
+      loadUsers(),
+    ]).finally(() => {
+      setInitialLoading(false);
+    });
   }, []);
+
+  const handleSelectUserForEditing = (u: any) => {
+    setSelectedUserId(u.id);
+    setEditingRole((u.role as RoleType) || 'EMPLOYEE');
+    setEditingCustomPermissions(Array.isArray(u.custom_permissions) ? u.custom_permissions : []);
+  };
+
+  const handleSaveUserPermissions = async () => {
+    if (!selectedUserId) return;
+    setIsSavingUserPerms(true);
+    setStatusMessage(null);
+    try {
+      const res: any = await api.users.updatePermissions(selectedUserId, {
+        role: editingRole,
+        custom_permissions: editingCustomPermissions,
+      });
+      const updatedUser = res?.data;
+      setUsersList((prev) =>
+        prev.map((u) =>
+          String(u.id) === String(selectedUserId)
+            ? { ...u, role: editingRole, custom_permissions: editingCustomPermissions }
+            : u
+        )
+      );
+
+      // If the modified user is the currently logged-in user, sync localStorage immediately
+      try {
+        const raw = localStorage.getItem('hr_user');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (
+            String(parsed?.id) === String(selectedUserId) ||
+            (updatedUser?.email && parsed?.email === updatedUser.email)
+          ) {
+            localStorage.setItem(
+              'hr_user',
+              JSON.stringify({
+                ...parsed,
+                role: editingRole,
+                custom_permissions: editingCustomPermissions,
+              })
+            );
+            window.dispatchEvent(new Event('hr-permissions-updated'));
+          }
+        }
+      } catch {}
+
+      setStatusMessage(
+        isAr
+          ? `✅ تم حفظ وتحديث الدور والصلاحيات المخصصة للمستخدم بنجاح (${editingCustomPermissions.length} صلاحيات مخصصة)`
+          : '✅ User role and custom permissions updated successfully'
+      );
+    } catch (err: any) {
+      setStatusMessage(err?.message || 'حدث خطأ أثناء حفظ الصلاحيات المخصصة');
+    } finally {
+      setIsSavingUserPerms(false);
+    }
+  };
+
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName || !newUserEmail) return;
+    setIsCreatingUser(true);
+    setStatusMessage(null);
+    try {
+      const res: any = await api.users.create({
+        name: newUserName,
+        email: newUserEmail,
+        password: newUserPassword || 'password123',
+        role: newUserRole,
+        custom_permissions: newUserCustomPermissions,
+      });
+      await loadUsers();
+      if (res?.data?.id) {
+        handleSelectUserForEditing(res.data);
+      }
+      setShowCreateUserModal(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserCustomPermissions([]);
+      setStatusMessage(
+        isAr
+          ? `✅ تم إنشاء حساب المستخدم (${newUserName}) بالدور (${ROLE_LABELS[newUserRole]?.ar}) مع (${newUserCustomPermissions.length}) صلاحيات مخصصة بنجاح`
+          : `✅ User (${newUserName}) created with custom permissions`
+      );
+    } catch (err: any) {
+      setStatusMessage(err?.message || 'تعذر إنشاء المستخدم');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -134,6 +273,14 @@ export default function SettingsPage() {
         : `✅ Biometric terminal (${newDeviceName}) registered on ADMS bridge`
     );
   };
+
+  if (initialLoading) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="dashboard" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -237,12 +384,120 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab 2: RBAC Matrix */}
+      {/* Tab 2: RBAC Matrix & Dynamic Per-User Permissions */}
       {activeTab === 'rbac' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="space-y-6">
+          {/* Dynamic User Permissions Section */}
+          <Card className="rounded-2xl border-slate-200 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+              <div>
+                <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <span>
+                    {isAr
+                      ? 'إدارة المستخدمين وتخصيص الصلاحيات الديناميكية (Dynamic User & Role Permissions)'
+                      : 'Dynamic User Creation & Custom Role Permissions'}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isAr
+                    ? 'لكل دور صلاحياته الافتراضية، ويمكنك منح أي مستخدم صلاحيات إضافية مخصصة أو إنشاء مستخدم جديد بصلاحيات مفصلة'
+                    : 'Every role has default permissions, and you can grant any user additional custom permissions'}
+                </p>
+              </div>
+
+              <Button
+                type="primary"
+                size="large"
+                data-testid="create-user-modal-btn"
+                onClick={() => setShowCreateUserModal(true)}
+                className="font-bold rounded-xl flex items-center gap-1.5"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>
+                  {isAr ? '+ إنشاء مستخدم جديد بصلاحيات مخصصة' : '+ Create User with Custom Permissions'}
+                </span>
+              </Button>
+            </div>
+
+            {/* Users Selector Strip */}
+            <div className="mb-5">
+              <p className="text-xs font-bold text-slate-700 mb-2">
+                {isAr
+                  ? 'اختر مستخدماً من المنظومة لتعديل دوره أو منحه صلاحيات إضافية:'
+                  : 'Select an existing user to customize their role & additional permissions:'}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {usersList.map((u) => {
+                  const isSelected = String(u.id) === String(selectedUserId);
+                  const uRole = (u.role as RoleType) || 'EMPLOYEE';
+                  const uCustom = Array.isArray(u.custom_permissions) ? u.custom_permissions : [];
+                  const extraCount = uCustom.filter((p: string) => !p.startsWith('-')).length;
+
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => handleSelectUserForEditing(u)}
+                      className={`p-3 rounded-xl border text-start transition flex items-center justify-between gap-2 ${
+                        isSelected
+                          ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-100'
+                          : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate">{u.name}</p>
+                        <p className="text-[11px] text-slate-500 font-mono truncate">{u.email}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Tag color="blue" className="m-0 text-[10px] font-bold">
+                          {uRole}
+                        </Tag>
+                        {extraCount > 0 && (
+                          <Tag color="success" className="m-0 text-[10px] font-bold">
+                            +{extraCount} {isAr ? 'إضافية' : 'extra'}
+                          </Tag>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Dynamic Role & Custom Permissions Picker for Selected User */}
+            <div className="space-y-4 pt-3 border-t border-slate-100">
+              <RolePermissionsPicker
+                role={editingRole}
+                onRoleChange={setEditingRole}
+                customPermissions={editingCustomPermissions}
+                onCustomPermissionsChange={setEditingCustomPermissions}
+                isAr={isAr}
+              />
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={isSavingUserPerms}
+                  onClick={handleSaveUserPermissions}
+                  className="font-bold rounded-xl px-6"
+                >
+                  <Save className="w-4 h-4 inline me-1.5" />
+                  <span>
+                    {isAr
+                      ? 'حفظ الدور والصلاحيات المخصصة للمستخدم'
+                      : 'Save User Role & Custom Permissions'}
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100">
-            <h2 className="font-bold text-sm text-slate-900">مصفوفة الصلاحيات (Role-Based Access Control)</h2>
-            <p className="text-xs text-slate-400 mt-0.5">تحديد مستويات الوصول وإخفاء القوائم والأزرار تلقائياً حسب الدور الوظيفي</p>
+            <h2 className="font-bold text-sm text-slate-900">مصفوفة الصلاحيات الافتراضية للأدوار (Default Role Matrix Reference)</h2>
+            <p className="text-xs text-slate-400 mt-0.5">تحديد مستويات الوصول الافتراضية لكل دور قبل إضافة الصلاحيات المخصصة</p>
           </div>
 
           <div className="overflow-x-auto text-xs">
@@ -309,6 +564,7 @@ export default function SettingsPage() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 
@@ -430,6 +686,86 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+      {/* Create User with Dynamic Permissions Modal (Ant Design Modal) */}
+      <Modal
+        open={showCreateUserModal}
+        onCancel={() => setShowCreateUserModal(false)}
+        footer={null}
+        width={900}
+        title={
+          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <UserPlus className="w-4 h-4 text-blue-600" />
+            <span>
+              {isAr
+                ? 'إنشاء مستخدم جديد وتخصيص صلاحياته الديناميكية'
+                : 'Create New User with Dynamic Role & Custom Permissions'}
+            </span>
+          </div>
+        }
+      >
+        <form onSubmit={handleCreateUserSubmit} data-testid="create-user-modal-form" className="space-y-4 pt-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {isAr ? 'الاسم الكامل للمستخدم *' : 'Full Name *'}
+              </label>
+              <input
+                type="text"
+                required
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder={isAr ? 'مثال: خالد العتيبي' : 'e.g. Khalid Al-Otaibi'}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {isAr ? 'البريد الإلكتروني لتسجيل الدخول *' : 'Login Email *'}
+              </label>
+              <input
+                type="email"
+                required
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="user@hrsystem.com"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {isAr ? 'كلمة المرور *' : 'Password *'}
+              </label>
+              <input
+                type="text"
+                required
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <RolePermissionsPicker
+              role={newUserRole}
+              onRoleChange={setNewUserRole}
+              customPermissions={newUserCustomPermissions}
+              onCustomPermissionsChange={setNewUserCustomPermissions}
+              isAr={isAr}
+              compact
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button onClick={() => setShowCreateUserModal(false)}>
+              {isAr ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button type="primary" htmlType="submit" loading={isCreatingUser} className="font-bold">
+              {isAr ? 'إنشاء المستخدم واعتماد الصلاحيات' : 'Create User & Save Permissions'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </DashboardLayout>
   );
 }

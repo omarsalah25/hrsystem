@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
 import {
@@ -21,7 +22,7 @@ export default function ReportsPage() {
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saudizationData, setSaudizationData] = useState<any>({
     saudization_percentage: 100.0,
     nitaqat_tier: 'PLATINUM',
@@ -83,6 +84,14 @@ export default function ReportsPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (loading && bradfordList.length === 0) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="dashboard" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

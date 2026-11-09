@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
@@ -30,6 +31,7 @@ export default function OffboardingPage() {
   const [clearanceInfo, setClearanceInfo] = useState<any>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isLoadingOffboarding, setIsLoadingOffboarding] = useState(true);
 
   const [itClear, setItClear] = useState(true);
   const [adminClear, setAdminClear] = useState(true);
@@ -46,7 +48,7 @@ export default function OffboardingPage() {
       if (list.length > 0) {
         setSelectedEmployeeId(list[0].id);
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setIsLoadingOffboarding(false));
   }, []);
 
   useEffect(() => {
@@ -123,6 +125,14 @@ export default function OffboardingPage() {
       setSubmitting(false);
     }
   };
+
+  if (isLoadingOffboarding) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="form" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

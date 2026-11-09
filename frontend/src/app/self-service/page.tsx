@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import { api } from '@/lib/api';
 import {
@@ -31,6 +32,7 @@ export default function SelfServicePage() {
 
   // Real authenticated user state
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoadingEss, setIsLoadingEss] = useState(true);
 
   // Interactive punch simulator
   const [punchedIn, setPunchedIn] = useState(true);
@@ -59,7 +61,10 @@ export default function SelfServicePage() {
           setCurrentUser(res.data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsLoadingEss(false);
+      });
   }, []);
 
   const handlePunchToggle = async () => {
@@ -79,6 +84,14 @@ export default function SelfServicePage() {
       console.log('Mobile punch saved in local offline storage');
     }
   };
+
+  if (isLoadingEss) {
+    return (
+      <DashboardLayout>
+        <PageSkeleton variant="dashboard" />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

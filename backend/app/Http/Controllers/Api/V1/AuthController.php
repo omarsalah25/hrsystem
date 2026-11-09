@@ -59,6 +59,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'custom_permissions' => $user->custom_permissions ?? [],
                     'tenant_id' => $user->tenant_id,
                     'accessible_portals' => $user->role === 'SUPER_ADMIN' ? ['ADMIN', 'COMPANY'] : ['COMPANY'],
                     'default_portal' => $user->role === 'SUPER_ADMIN' ? 'ADMIN' : 'COMPANY',

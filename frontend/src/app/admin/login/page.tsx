@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Skeleton as AntdSkeleton } from 'antd';
+import { usePageSkeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
 import {
@@ -21,6 +23,7 @@ import {
 export default function PlatformAdminLoginPage() {
   const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
+  const { isSkeletonLoading } = usePageSkeleton(150);
   const isAr = locale === 'ar';
 
   const [email, setEmail] = useState('admin@hrsystem.com');
@@ -85,6 +88,12 @@ export default function PlatformAdminLoginPage() {
       {/* Center Auth Card */}
       <div className="max-w-md w-full mx-auto my-8">
         <div className="bg-slate-900/90 rounded-3xl p-8 border border-slate-800 shadow-2xl shadow-indigo-950/50 backdrop-blur-md">
+          {isSkeletonLoading ? (
+            <div data-testid="page-skeleton" data-slot="skeleton">
+              <AntdSkeleton active avatar paragraph={{ rows: 5 }} />
+            </div>
+          ) : (
+            <>
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-950/80 border border-indigo-700/50 rounded-full text-indigo-300 font-bold text-[11px] mb-3">
@@ -207,6 +216,8 @@ export default function PlatformAdminLoginPage() {
               {isRtl ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
             </Link>
           </div>
+            </>
+          )}
         </div>
       </div>
 
