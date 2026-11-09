@@ -31,7 +31,9 @@ class BradfordFactorService
         $prevDate = null;
 
         foreach ($absences as $record) {
-            $currentDate = new \DateTime($record->date);
+            $currentDate = $record->date instanceof \DateTimeInterface
+                ? new \DateTime($record->date->format('Y-m-d'))
+                : new \DateTime((string) $record->date);
             if ($prevDate === null) {
                 $spells = 1;
             } else {

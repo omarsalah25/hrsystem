@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/translations';
 import api from '@/lib/api';
 import {
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
 
   // Simulated state for quick punch
@@ -337,7 +339,10 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-base text-slate-900">{t('employees.title')}</h3>
                 <p className="text-xs text-slate-500">سجل الموظفين المعتمد للشركات في الرياض والقاهرة</p>
               </div>
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+              <button
+                onClick={() => router.push('/employees/new')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+              >
                 + {t('employees.add_new')}
               </button>
             </div>
@@ -508,11 +513,17 @@ export default function DashboardPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                <button
+                  onClick={() => api.documents.downloadPayslip('01a1abf6-cbbf-71d4-9ab6-a77c3330e803')}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                >
                   <Download className="w-4 h-4" />
                   {t('payroll.download_payslip')}
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                <button
+                  onClick={() => api.payroll.exportWps('current')}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                >
                   <FileSpreadsheet className="w-4 h-4" />
                   {t('payroll.export_wps')}
                 </button>
@@ -529,7 +540,10 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-base text-slate-900">{t('leaves.title')}</h3>
                 <p className="text-xs text-slate-500">أرصدة الإجازات السنوية والمرضية والطلبات المعلقة</p>
               </div>
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition">
+              <button
+                onClick={() => router.push('/leaves/apply')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition"
+              >
                 + {t('leaves.request_leave')}
               </button>
             </div>

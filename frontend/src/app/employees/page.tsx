@@ -195,7 +195,30 @@ export default function EmployeesPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition shadow-xs">
+          <button
+            onClick={() => {
+              const rows = [
+                ['ID', 'Name', 'Department', 'Role', 'Branch', 'Salary', 'Status'],
+                ...filteredEmployees.map((e) => [
+                  e.empNo,
+                  e.name,
+                  e.dept,
+                  e.role,
+                  e.branch,
+                  String(e.salary),
+                  e.status,
+                ]),
+              ];
+              const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map((r) => r.join(',')).join('\n');
+              const link = document.createElement('a');
+              link.setAttribute('href', encodeURI(csvContent));
+              link.setAttribute('download', 'employees_directory_2026.csv');
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition shadow-xs"
+          >
             <Download className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'تصدير Excel' : 'Export Excel'}</span>
           </button>

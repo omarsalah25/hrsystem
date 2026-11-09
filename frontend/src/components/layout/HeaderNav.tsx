@@ -10,6 +10,7 @@ import { Globe2, Bell, Search, MapPin, ShieldCheck, LogOut } from 'lucide-react'
 export default function HeaderNav() {
   const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
+  const [showNotifs, setShowNotifs] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string; email?: string }>({
     name: 'د. عبدالله السعيد',
     role: 'SUPER_ADMIN',
@@ -88,10 +89,38 @@ export default function HeaderNav() {
         </button>
 
         {/* Notifications */}
-        <button className="relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifs((v) => !v)}
+            className="relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+          >
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+          </button>
+
+          {showNotifs && (
+            <div className="absolute end-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 text-xs z-50">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 font-bold text-slate-900">
+                <span>{locale === 'ar' ? 'التنبيهات النظامية' : 'System Notifications'}</span>
+                <button onClick={() => setShowNotifs(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              </div>
+              <div className="divide-y divide-slate-100 mt-1">
+                <Link href="/leaves" onClick={() => setShowNotifs(false)} className="block py-2 hover:bg-slate-50 rounded-lg px-2">
+                  <p className="font-bold text-slate-800">طلبات إجازة بانتظار الاعتماد</p>
+                  <p className="text-[10px] text-slate-400">يوجد طلبان قيد المراجعة الإدارية</p>
+                </Link>
+                <Link href="/learning" onClick={() => setShowNotifs(false)} className="block py-2 hover:bg-slate-50 rounded-lg px-2">
+                  <p className="font-bold text-amber-700">تنبيه انتهاء إقامة عمل</p>
+                  <p className="text-[10px] text-slate-400">تنتهي خلال 40 يوماً - يرجى التجديد</p>
+                </Link>
+                <Link href="/payroll" onClick={() => setShowNotifs(false)} className="block py-2 hover:bg-slate-50 rounded-lg px-2">
+                  <p className="font-bold text-emerald-700">مسير الرواتب معتمد</p>
+                  <p className="text-[10px] text-slate-400">جاهز لتصدير ملف حماية الأجور WPS</p>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Profile & Logout */}
         <div className="flex items-center gap-2.5 ps-2 border-s border-slate-200">
