@@ -259,7 +259,7 @@ export default function SelfServicePage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => alert(`جاري تنزيل قسيمة راتب ${slip.month} بصيغة PDF مشفرة`)}
+                      onClick={() => api.documents.downloadPayslip('01a1abf6-cbbf-71d4-9ab6-a77c3330e803')}
                       className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg flex items-center gap-1.5 transition"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -416,7 +416,7 @@ export default function SelfServicePage() {
 
                 <div className="mt-4 pt-3 border-t border-slate-200 flex justify-end gap-2">
                   <button
-                    onClick={() => alert('تم تنزيل الخطاب PDF المعتمد بنجاح')}
+                    onClick={() => api.documents.downloadCertificate('SAMPLE_CERTIFICATE_EMP_SA001')}
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />

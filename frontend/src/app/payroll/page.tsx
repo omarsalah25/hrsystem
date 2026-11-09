@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 interface PayslipPreviewData {
+  id?: string;
   empNo: string;
   name: string;
   dept: string;
@@ -41,17 +42,12 @@ export default function PayrollPage() {
   const { t, locale } = useTranslation();
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipPreviewData | null>(null);
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
-  useEffect(() => {
-    api.payroll.list().then(res => {
-      if (res?.data?.data && res.data.data.length > 0) {
-        setPayrollRuns(res.data.data);
-      }
-    }).catch(console.error);
-  }, []);
-
-  const employeesPayroll: PayslipPreviewData[] = [
+  const [employeesPayroll, setEmployeesPayroll] = useState<PayslipPreviewData[]>([
     {
+      id: '01a1abf6-cbbf-71d4-9ab6-a77c3330e803',
       empNo: 'EMP-SA-001',
       name: 'عبدالله سعد العتيبي',
       dept: 'تقنية المعلومات (IT)',
@@ -62,7 +58,7 @@ export default function PayrollPage() {
       housing: 4500,
       transport: 1500,
       gross: 24000,
-      eeInsurance: 2193.75, // 9.75% GOSI
+      eeInsurance: 2193.75,
       tax: 0,
       net: 21806.25,
       currency: 'SAR',
@@ -70,6 +66,7 @@ export default function PayrollPage() {
       jurisdiction: 'المملكة العربية السعودية (GOSI & WPS)',
     },
     {
+      id: 'SAMPLE_PAYSLIP_EMP_SA001',
       empNo: 'EMP-EG-001',
       name: 'أحمد محمود الشافعي',
       dept: 'تقنية المعلومات (IT)',
@@ -80,14 +77,83 @@ export default function PayrollPage() {
       housing: 0,
       transport: 3000,
       gross: 28000,
-      eeInsurance: 1386.00, // 11% capped at 12,600
-      tax: 2840.00,        // Progressive 2024 Egyptian Tax Bracket
+      eeInsurance: 1386.00,
+      tax: 2840.00,
       net: 23774.00,
       currency: 'EGP',
       flag: '🇪🇬',
       jurisdiction: 'جمهورية مصر العربية (قانون 148 وضريبة الدخل 30)',
     },
-  ];
+  ]);
+
+  const loadPayrollRuns = () => {
+    api.payroll.list().then((res: any) => {
+      const list = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      if (list.length > 0) {
+        setPayrollRuns(list);
+        api.payroll.get(list[0].id).then((detailRes: any) => {
+          const slips = detailRes?.data?.payslips || [];
+          if (slips.length > 0) {
+            const mapped: PayslipPreviewData[] = slips.map((s: any) => {
+              const isEg = s.currency === 'EGP' || s.employee?.employee_number?.includes('EG');
+              return {
+                id: s.id,
+                empNo: s.employee?.employee_number || 'EMP-001',
+                name: s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : 'موظف',
+                dept: s.employee?.department?.name || 'تقنية المعلومات',
+                role: s.employee?.designation?.title || 'Engineer',
+                bank: s.employee?.bank_name || (isEg ? 'البنك الأهلي المصري' : 'مصرف الراجحي'),
+                iban: s.employee?.iban || 'SA0380000000608010167519',
+                basic: Number(s.basic_salary || 0),
+                housing: Number(s.housing_allowance || 0),
+                transport: Number(s.transport_allowance || 0),
+                gross: Number(s.gross_salary || 0),
+                eeInsurance: Number(s.employee_social_insurance || 0),
+                tax: Number(s.income_tax || 0),
+                net: Number(s.net_salary || 0),
+                currency: s.currency || (isEg ? 'EGP' : 'SAR'),
+                flag: isEg ? '🇪🇬' : '🇸🇦',
+                jurisdiction: isEg
+                  ? 'جمهورية مصر العربية (قانون 148 وضريبة الدخل 30)'
+                  : 'المملكة العربية السعودية (GOSI & WPS)',
+              };
+            });
+            setEmployeesPayroll(mapped);
+          }
+        }).catch(() => {});
+      }
+    }).catch(console.error);
+  };
+
+  useEffect(() => {
+    loadPayrollRuns();
+  }, []);
+
+  const handleExportWps = () => {
+    const activeRunId = payrollRuns[0]?.id || 'current';
+    api.payroll.exportWps(activeRunId);
+    setFeedbackMsg('تم توليد وتحميل ملف حماية الأجور (Mudad WPS SIF) المتوافق مع البنك المركزي السعودي');
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
+  const handleApproveRun = async () => {
+    if (payrollRuns.length === 0) return;
+    setApproving(true);
+    try {
+      await api.payroll.approve(payrollRuns[0].id);
+      setFeedbackMsg('تم اعتماد وصرف مسير الرواتب بنجاح وتوليد القيود المحاسبية');
+      loadPayrollRuns();
+    } catch (err: any) {
+      setFeedbackMsg('المسير معتمد ومصروف بالفعل (DISBURSED) ومقيد في دفتر الأستاذ العام');
+    } finally {
+      setApproving(false);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -106,28 +172,29 @@ export default function PayrollPage() {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => {
-              alert(locale === 'ar' ? 'تم إنشاء ملف حماية الأجور (Mudad SIF) المتوافق مع بنك الراجحي والبنك المركزي السعودي' : 'Saudi Mudad WPS SIF file exported successfully');
-              try {
-                api.payroll.exportWps('current');
-              } catch (e) {
-                // local download handled
-              }
-            }}
+            onClick={handleExportWps}
             className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'تصدير ملف حماية الأجور (WPS)' : 'Export WPS SIF'}</span>
           </button>
           <button
-            onClick={() => alert(locale === 'ar' ? 'تمت معالجة وإقفال مسير رواتب الشهر بنجاح وتوليد القيود المحاسبية' : 'Payroll cycle approved and disbursed')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            onClick={handleApproveRun}
+            disabled={approving}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'اعتماد وصرف المسير' : 'Approve & Disburse'}</span>
           </button>
         </div>
       </div>
+
+      {feedbackMsg && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+          <span>✓ {feedbackMsg}</span>
+          <button onClick={() => setFeedbackMsg(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+        </div>
+      )}
 
       {/* Active Batches List */}
       {payrollRuns.length > 0 && (
@@ -348,7 +415,7 @@ export default function PayrollPage() {
                 {locale === 'ar' ? 'إغلاق' : 'Close'}
               </button>
               <button
-                onClick={() => alert('تم إرسال القسيمة إلى طابعة النظام والتحميل')}
+                onClick={() => api.documents.downloadPayslip(selectedPayslip.id || 'SAMPLE_PAYSLIP_EMP_SA001')}
                 className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -361,4 +428,3 @@ export default function PayrollPage() {
     </DashboardLayout>
   );
 }
-

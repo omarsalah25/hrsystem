@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use Carbon\Carbon;
@@ -16,15 +17,19 @@ class LeaveController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $employee = $request->user()->employee;
-        if (!$employee) {
-            abort(400, 'Employee profile not found.');
+        $user = $request->user();
+        $isPrivileged = in_array($user->role, ['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'LINE_MANAGER'], true);
+
+        $query = LeaveRequest::with(['leaveType', 'employee.department', 'employee.branch'])
+            ->orderBy('created_at', 'desc');
+
+        if (!$isPrivileged && $user->employee) {
+            $query->where('employee_id', $user->employee->id);
+        } elseif ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
         }
 
-        $requests = LeaveRequest::with('leaveType')
-            ->where('employee_id', $employee->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $requests = $query->paginate(25);
 
         return response()->json([
             'success' => true,
@@ -32,9 +37,18 @@ class LeaveController extends Controller
         ]);
     }
 
+    public function types(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => LeaveType::all(),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'employee_id' => 'nullable|uuid|exists:employees,id',
             'leave_type_id' => 'required|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -42,7 +56,10 @@ class LeaveController extends Controller
             'medical_document' => 'nullable|file|mimes:pdf,jpg,png|max:5120', // 5MB limit
         ]);
 
-        $employee = $request->user()->employee ?? Employee::where('user_id', $request->user()->id)->first() ?? Employee::first();
+        $employee = !empty($validated['employee_id'])
+            ? Employee::find($validated['employee_id'])
+            : ($request->user()->employee ?? Employee::where('user_id', $request->user()->id)->first() ?? Employee::first());
+
         if (!$employee) {
             abort(400, 'User is not linked to an employee profile.');
         }

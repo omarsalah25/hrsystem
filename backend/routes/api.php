@@ -41,6 +41,10 @@ Route::prefix('v1')->group(function () {
             return response()->json(['success' => true, 'data' => \App\Models\Department::with('company')->get()]);
         });
 
+        Route::get('/designations', function () {
+            return response()->json(['success' => true, 'data' => \App\Models\Designation::all()]);
+        });
+
         Route::get('/branches', [BranchController::class, 'index']);
         Route::get('/branches/{id}', [BranchController::class, 'show']);
         Route::post('/branches', [BranchController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
@@ -59,6 +63,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Attendance (Biometric & Mobile GPS Geofencing)
+        Route::get('/attendance/logs', [AttendanceController::class, 'index']);
+        Route::post('/attendance/reconcile', [AttendanceController::class, 'reconcile']);
         Route::post('/attendance/punch', [AttendanceController::class, 'punch']);
         Route::get('/attendance/my-summary', [AttendanceController::class, 'mySummary']);
 
@@ -67,6 +73,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/shifts', [ShiftController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Leaves & Absence Management
+        Route::get('/leaves/types', [LeaveController::class, 'types']);
         Route::get('/leaves', [LeaveController::class, 'index']);
         Route::post('/leaves', [LeaveController::class, 'store']);
         Route::patch('/leaves/{id}/approve', [LeaveController::class, 'approve'])->middleware('role:SUPER_ADMIN,HR_MANAGER,DEPARTMENT_MANAGER,LINE_MANAGER');
@@ -95,6 +102,7 @@ Route::prefix('v1')->group(function () {
 
         // Learning & Development (L&D)
         Route::get('/learning/courses', [LearningController::class, 'index']);
+        Route::post('/learning/courses', [LearningController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
         Route::get('/learning/courses/{id}', [LearningController::class, 'show']);
         Route::post('/learning/courses/{id}/enroll', [LearningController::class, 'enroll']);
         Route::post('/learning/courses/{id}/certificate', [LearningController::class, 'issueCertificate']);

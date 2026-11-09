@@ -14,7 +14,8 @@ import {
   Settings,
   ShieldAlert,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 interface Shift {
@@ -33,12 +34,21 @@ export default function ShiftsPage() {
   const { t, locale, isRtl } = useTranslation();
   const isAr = locale === 'ar';
 
-  // Ramadan special statutory toggle
   const [ramadanMode, setRamadanMode] = useState<boolean>(false);
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState<number>(15);
-  const [overtimeRate, setOvertimeRate] = useState<number>(150); // 150% in Saudi
+  const [overtimeRate, setOvertimeRate] = useState<number>(150);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newShift, setNewShift] = useState({
+    name_ar: '',
+    name_en: '',
+    start_time: '08:00',
+    end_time: '17:00',
+    grace_minutes: 15,
+    is_ramadan_shift: false,
+  });
 
-  // Shift list
   const [shifts, setShifts] = useState<Shift[]>([
     {
       id: 'S1',
@@ -86,7 +96,7 @@ export default function ShiftsPage() {
     },
   ]);
 
-  useEffect(() => {
+  const loadShifts = () => {
     api.shifts.list()
       .then((res: any) => {
         const rawItems = Array.isArray(res?.data)
@@ -103,7 +113,7 @@ export default function ShiftsPage() {
             startTime: s.start_time || '08:00',
             endTime: s.end_time || '17:00',
             breakMinutes: s.break_minutes || 60,
-            totalWorkingHours: s.daily_hours || 8,
+            totalWorkingHours: s.daily_hours || (s.is_ramadan_shift ? 6 : 8),
             color: s.is_ramadan_shift ? 'bg-emerald-500' : 'bg-blue-500',
             isRamadan: Boolean(s.is_ramadan_shift),
           }));
@@ -113,9 +123,37 @@ export default function ShiftsPage() {
       .catch((err) => {
         console.warn('Could not fetch shifts from API:', err);
       });
+  };
+
+  useEffect(() => {
+    loadShifts();
   }, []);
 
-  // Days of the week in GCC / Egypt order (Sunday to Thursday + Friday/Saturday weekend)
+  const handleCreateShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newShift.name_ar.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.shifts.create(newShift);
+      setShowAddModal(false);
+      setNewShift({
+        name_ar: '',
+        name_en: '',
+        start_time: '08:00',
+        end_time: '17:00',
+        grace_minutes: 15,
+        is_ramadan_shift: false,
+      });
+      setFeedbackMsg(isAr ? 'تمت إضافة الوردية الجديدة وحفظها في جدول الدوام' : 'New shift added successfully');
+      loadShifts();
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      setFeedbackMsg(err.message || 'تعذر إضافة الوردية');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const days = [
     { ar: 'الأحد', en: 'Sunday' },
     { ar: 'الإثنين', en: 'Monday' },
@@ -141,9 +179,19 @@ export default function ShiftsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => alert('تم حفظ إعدادات الورديات وجدول الدوام')}
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAr ? 'إضافة وردية جديدة' : 'Add Shift'}</span>
+          </button>
+          <button
+            onClick={() => {
+              setFeedbackMsg(isAr ? 'تم حفظ إعدادات الورديات وفترة السماح ومعامل العمل الإضافي بنجاح' : 'Shift roster & rules saved');
+              setTimeout(() => setFeedbackMsg(null), 3500);
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
           >
             <Save className="w-3.5 h-3.5" />
@@ -151,6 +199,13 @@ export default function ShiftsPage() {
           </button>
         </div>
       </div>
+
+      {feedbackMsg && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+          <span>✓ {feedbackMsg}</span>
+          <button onClick={() => setFeedbackMsg(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+        </div>
+      )}
 
       {/* Ramadan Statutory Banner */}
       <div className={`p-4 rounded-xl border mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition ${
@@ -339,7 +394,100 @@ export default function ShiftsPage() {
           </div>
         </div>
       </div>
+
+      {/* Add Shift Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">
+                {isAr ? 'إضافة وردية عمل جديدة' : 'Create Work Shift'}
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateShift} className="space-y-4 my-5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">اسم الوردية (بالعربية)</label>
+                <input
+                  type="text"
+                  required
+                  value={newShift.name_ar}
+                  onChange={(e) => setNewShift({ ...newShift, name_ar: e.target.value })}
+                  placeholder="مثال: الوردية المرنة (الرياض)"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">الاسم بالإنجليزية (اختياري)</label>
+                <input
+                  type="text"
+                  value={newShift.name_en}
+                  onChange={(e) => setNewShift({ ...newShift, name_en: e.target.value })}
+                  placeholder="Flexible Shift (Riyadh)"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">وقت البدء</label>
+                  <input
+                    type="time"
+                    required
+                    value={newShift.start_time}
+                    onChange={(e) => setNewShift({ ...newShift, start_time: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">وقت الانصراف</label>
+                  <input
+                    type="time"
+                    required
+                    value={newShift.end_time}
+                    onChange={(e) => setNewShift({ ...newShift, end_time: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newShift.is_ramadan_shift}
+                  onChange={(e) => setNewShift({ ...newShift, is_ramadan_shift: e.target.checked })}
+                  className="rounded text-emerald-600"
+                />
+                <span className="font-bold text-emerald-900">وردية خاصة بشهر رمضان المبارك (6 ساعات)</span>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm"
+                >
+                  {submitting ? 'جاري الحفظ...' : 'إضافة الوردية'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
-

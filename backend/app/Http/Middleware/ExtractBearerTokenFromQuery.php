@@ -19,3 +19,4 @@ class ExtractBearerTokenFromQuery
         return $next($request);
     }
 }
+

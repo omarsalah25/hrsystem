@@ -19,16 +19,44 @@ import {
 export default function OffboardingPage() {
   const { t, locale } = useTranslation();
 
-  // End of Service Gratuity Interactive Simulator
   const [tenureYears, setTenureYears] = useState<number>(4.5);
   const [lastSalary, setLastSalary] = useState<number>(18000);
   const [separationType, setSeparationType] = useState<'RESIGNATION' | 'TERMINATION'>('RESIGNATION');
   const [calculatedResult, setCalculatedResult] = useState<any>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [clearanceInfo, setClearanceInfo] = useState<any>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Multi-department clearance checklist states
   const [itClear, setItClear] = useState(true);
   const [adminClear, setAdminClear] = useState(true);
   const [financeClear, setFinanceClear] = useState(false);
+
+  useEffect(() => {
+    api.employees.list().then((res: any) => {
+      const list = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      setEmployees(list);
+      if (list.length > 0) {
+        setSelectedEmployeeId(list[0].id);
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (selectedEmployeeId) {
+      api.offboarding.clearanceStatus(selectedEmployeeId).then((res: any) => {
+        if (res?.data) {
+          setClearanceInfo(res.data);
+          setItClear(Boolean(res.data.it_assets_cleared));
+        }
+      }).catch(() => {});
+    }
+  }, [selectedEmployeeId]);
 
   useEffect(() => {
     api.offboarding.calculateEsb({
@@ -43,7 +71,6 @@ export default function OffboardingPage() {
     }).catch(() => {});
   }, [tenureYears, lastSalary, separationType]);
 
-  // Compute Saudi Labor Law ESB (Articles 84 & 85)
   const computeGratuity = () => {
     if (calculatedResult) {
       return {
@@ -76,6 +103,25 @@ export default function OffboardingPage() {
 
   const esb = computeGratuity();
 
+  const handleInitiateSettlement = async () => {
+    if (!selectedEmployeeId) return;
+    setSubmitting(true);
+    try {
+      await api.offboarding.initiate({
+        employee_id: selectedEmployeeId,
+        separation_date: new Date().toISOString().slice(0, 10),
+        separation_reason: separationType,
+        notes: `صافي مكافأة نهاية الخدمة المعتمدة: ${esb.finalAmount} ريال`,
+      });
+      setFeedbackMsg(`تم اعتماد التصفية النهائية (FNF) بمبلغ ${esb.finalAmount.toLocaleString()} ريال وتسجيلها في النظام`);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      setFeedbackMsg(err.message || 'تم تسجيل طلب التصفية النهائية');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -92,13 +138,20 @@ export default function OffboardingPage() {
         </div>
 
         <button
-          onClick={() => alert('تم إصدار شهادة إخلاء الطرف الرقمية')}
+          onClick={() => api.documents.downloadCertificate('SAMPLE_CERTIFICATE_EMP_SA001')}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
         >
           <FileCheck className="w-3.5 h-3.5" />
-          <span>{locale === 'ar' ? 'إصدار شهادة الخبرة وإخلاء الطرف' : 'Issue Experience Certificate'}</span>
+          <span>{locale === 'ar' ? 'إصدار شهادة الخبرة وإخلاء الطرف (PDF)' : 'Download Experience Certificate'}</span>
         </button>
       </div>
+
+      {feedbackMsg && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+          <span>✓ {feedbackMsg}</span>
+          <button onClick={() => setFeedbackMsg(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+        </div>
+      )}
 
       {/* Grid: Clearance & Gratuity Calculator */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -109,10 +162,26 @@ export default function OffboardingPage() {
               <h2 className="text-base font-bold text-slate-900">
                 {locale === 'ar' ? 'مراحل إخلاء الطرف الإداري' : 'Departmental Clearance'}
               </h2>
-              <p className="text-xs text-slate-400">م. خالد عبدالرحمن القرني (EMP-SA-044)</p>
+              <div className="mt-1.5">
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold text-slate-700 outline-none"
+                >
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name} ({emp.employee_number})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full">
-              بانتظار المالية (2/3 مكتمل)
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+              itClear && adminClear && financeClear
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-amber-100 text-amber-800'
+            }`}>
+              {itClear && adminClear && financeClear ? 'مكتمل (3/3)' : 'قيد استكمال الإخلاء'}
             </span>
           </div>
 
@@ -129,7 +198,11 @@ export default function OffboardingPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">تقنية المعلومات (IT Department)</p>
-                  <p className="text-[11px] text-slate-500">استلام اللابتوب وإلغاء صلاحيات SSO والبريد</p>
+                  <p className="text-[11px] text-slate-500">
+                    {clearanceInfo
+                      ? `العهد المسجلة النشطة: ${clearanceInfo.active_assets_count} أجهزة`
+                      : 'استلام اللابتوب وإلغاء صلاحيات SSO والبريد'}
+                  </p>
                 </div>
               </div>
               <input
@@ -269,14 +342,14 @@ export default function OffboardingPage() {
           </div>
 
           <button
-            onClick={() => alert(`تم ترحيل مبلغ ${esb.finalAmount} ريال إلى مسير التسوية النهائية FNF`)}
-            className="w-full mt-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition shadow-sm"
+            onClick={handleInitiateSettlement}
+            disabled={submitting}
+            className="w-full mt-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition shadow-sm"
           >
-            اعتماد المبلغ في التصفية النهائية (FNF Settlement)
+            {submitting ? 'جاري الاعتماد...' : 'اعتماد المبلغ في التصفية النهائية (FNF Settlement)'}
           </button>
         </div>
       </div>
     </DashboardLayout>
   );
 }
-

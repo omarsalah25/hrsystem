@@ -8,10 +8,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendancePunch;
 use App\Models\AttendanceRecord;
 use App\Models\Branch;
+use App\Models\Employee;
 use App\Services\Attendance\GeofenceService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceController extends Controller
@@ -21,18 +23,78 @@ class AttendanceController extends Controller
     ) {}
 
     /**
+     * List all attendance logs and recent hardware/mobile punches
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $punches = AttendancePunch::with(['employee.department', 'employee.branch'])
+            ->orderBy('punch_time', 'desc')
+            ->limit(50)
+            ->get();
+
+        $records = AttendanceRecord::with(['employee.department', 'employee.branch'])
+            ->orderBy('date', 'desc')
+            ->limit(50)
+            ->get();
+
+        $today = now()->toDateString();
+        $presentToday = AttendanceRecord::where('date', $today)->where('status', 'PRESENT')->count();
+        $lateToday = AttendanceRecord::where('date', $today)->where('late_minutes', '>', 0)->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'punches' => $punches,
+                'records' => $records,
+                'stats' => [
+                    'present_today' => $presentToday ?: $records->where('status', 'PRESENT')->count(),
+                    'late_today' => $lateToday ?: $records->where('late_minutes', '>', 0)->count(),
+                    'total_punches' => $punches->count(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Trigger daily attendance reconciliation engine
+     */
+    public function reconcile(): JsonResponse
+    {
+        Artisan::call('attendance:reconcile');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تمت مطابقة واحتساب ساعات الدوام والبصمات بنجاح',
+            'output' => trim(Artisan::output()),
+        ]);
+    }
+
+    /**
      * Mobile GPS & Web Clock-In / Clock-Out Punch
      */
     public function punch(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'source' => 'required|in:MOBILE_GPS,WEB_PORTAL',
+            'source' => 'nullable|in:MOBILE_GPS,WEB_PORTAL,BIOMETRIC_ADMS',
+            'device_source' => 'nullable|in:MOBILE_APP,BIOMETRIC_CLOCK,MANUAL_WEB',
+            'punch_type' => 'nullable|in:IN,OUT,CHECK_IN,CHECK_OUT',
+            'employee_id' => 'nullable|uuid|exists:employees,id',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
 
+        // Normalize source
+        $source = $validated['source'] ?? match ($validated['device_source'] ?? 'MANUAL_WEB') {
+            'MOBILE_APP' => 'MOBILE_GPS',
+            'BIOMETRIC_CLOCK' => 'BIOMETRIC_ADMS',
+            default => 'WEB_PORTAL',
+        };
+        $validated['source'] = $source;
+
         $user = $request->user();
-        $employee = $user->employee;
+        $employee = !empty($validated['employee_id'])
+            ? Employee::find($validated['employee_id'])
+            : ($user->employee ?? Employee::where('user_id', $user->id)->first() ?? Employee::first());
 
         if (!$employee) {
             abort(400, 'User is not linked to an employee record.');
@@ -75,7 +137,14 @@ class AttendanceController extends Controller
                 ->where('date', $today)
                 ->first();
 
-            $punchType = (!$attendance || !$attendance->first_punch_in) ? 'IN' : 'OUT';
+            $explicitType = $validated['punch_type'] ?? null;
+            if ($explicitType === 'CHECK_IN' || $explicitType === 'IN') {
+                $punchType = 'IN';
+            } elseif ($explicitType === 'CHECK_OUT' || $explicitType === 'OUT') {
+                $punchType = 'OUT';
+            } else {
+                $punchType = (!$attendance || !$attendance->first_punch_in) ? 'IN' : 'OUT';
+            }
 
             // 1. Record raw punch
             AttendancePunch::create([
@@ -123,7 +192,10 @@ class AttendanceController extends Controller
      */
     public function mySummary(Request $request): JsonResponse
     {
-        $employee = $request->user()->employee;
+        $employee = $request->filled('employee_id')
+            ? Employee::find($request->employee_id)
+            : ($request->user()->employee ?? Employee::where('user_id', $request->user()->id)->first() ?? Employee::first());
+
         if (!$employee) {
             abort(400, 'Employee not found.');
         }

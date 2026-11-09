@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ShiftController extends Controller
 {
@@ -51,9 +52,10 @@ class ShiftController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $custom = Cache::get('hr_custom_shifts', []);
         return response()->json([
             'success' => true,
-            'data' => $this->defaultShifts,
+            'data' => array_merge($custom, $this->defaultShifts),
         ]);
     }
 
@@ -61,7 +63,7 @@ class ShiftController extends Controller
     {
         $validated = $request->validate([
             'name_ar' => 'required|string|max:150',
-            'name_en' => 'required|string|max:150',
+            'name_en' => 'nullable|string|max:150',
             'start_time' => 'required|string',
             'end_time' => 'required|string',
             'daily_hours' => 'required|numeric|min:4|max:12',
@@ -70,7 +72,16 @@ class ShiftController extends Controller
             'overtime_multiplier' => 'numeric|min:1.0',
         ]);
 
-        $newShift = array_merge($validated, ['id' => 'SHIFT-CUST-' . time()]);
+        $newShift = array_merge([
+            'name_en' => $validated['name_en'] ?: $validated['name_ar'],
+            'grace_period_minutes' => 15,
+            'is_ramadan_shift' => false,
+            'overtime_multiplier' => 1.5,
+        ], $validated, ['id' => 'SHIFT-CUST-' . time()]);
+
+        $custom = Cache::get('hr_custom_shifts', []);
+        array_unshift($custom, $newShift);
+        Cache::put('hr_custom_shifts', $custom, now()->addDays(30));
 
         return response()->json([
             'success' => true,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
@@ -33,6 +33,16 @@ export default function LeavesPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [newLeave, setNewLeave] = useState({
+    leave_type_id: '',
+    start_date: '2026-11-15',
+    end_date: '2026-11-18',
+    reason: '',
+  });
+
   const [requests, setRequests] = useState<LeaveRequestItem[]>([
     {
       id: '1',
@@ -72,7 +82,7 @@ export default function LeavesPage() {
     },
   ]);
 
-  React.useEffect(() => {
+  const loadLeaves = () => {
     api.leaves.list()
       .then((res: any) => {
         const rawItems = Array.isArray(res?.data)
@@ -88,9 +98,9 @@ export default function LeavesPage() {
             empNo: r.employee?.employee_number || 'EMP-001',
             dept: r.employee?.department?.name || 'إدارة العمليات',
             type: r.leave_type?.name || 'إجازة سنوية',
-            startDate: r.start_date,
-            endDate: r.end_date,
-            totalDays: r.total_days,
+            startDate: r.start_date ? String(r.start_date).slice(0, 10) : '2026-11-10',
+            endDate: r.end_date ? String(r.end_date).slice(0, 10) : '2026-11-12',
+            totalDays: r.total_days || 1,
             reason: r.reason || 'إجازة شخصية',
             status: r.status === 'APPROVED' ? 'APPROVED' : r.status === 'REJECTED' ? 'REJECTED' : 'PENDING',
           }));
@@ -100,6 +110,19 @@ export default function LeavesPage() {
       .catch((err) => {
         console.warn('Could not fetch leaves from API:', err);
       });
+  };
+
+  useEffect(() => {
+    loadLeaves();
+    api.leaves.types()
+      .then((res: any) => {
+        const list = Array.isArray(res?.data) ? res.data : [];
+        setLeaveTypes(list);
+        if (list.length > 0) {
+          setNewLeave((prev) => ({ ...prev, leave_type_id: list[0].id }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleAction = async (id: string, action: 'APPROVED' | 'REJECTED') => {
@@ -110,11 +133,30 @@ export default function LeavesPage() {
     try {
       if (action === 'APPROVED') {
         await api.leaves.approve(id);
+        setFeedbackMsg('تم اعتماد طلب الإجازة وتحديث رصيد الموظف');
       } else {
-        await api.leaves.reject(id, 'مرفوض إدارياً');
+        await api.leaves.reject(id, 'مرفوض لحاجة العمل');
+        setFeedbackMsg('تم رفض طلب الإجازة وإشعار الموظف');
       }
+      setTimeout(() => setFeedbackMsg(null), 3500);
     } catch (e) {
-      console.log('Action recorded in local offline cache');
+      console.log('Action recorded in local cache');
+    }
+  };
+
+  const handleSubmitModalLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.leaves.create(newLeave);
+      setIsApplyModalOpen(false);
+      setFeedbackMsg('تم تقديم طلب الإجازة بنجاح وإرساله للاعتماد');
+      loadLeaves();
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      setFeedbackMsg(err.message || 'تعذر تقديم طلب الإجازة');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -133,14 +175,30 @@ export default function LeavesPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => router.push('/leaves/apply')}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{locale === 'ar' ? 'تقديم طلب إجازة نظامية' : 'Apply for Statutory Leave'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsApplyModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{locale === 'ar' ? 'طلب إجازة سريع' : 'Quick Leave Request'}</span>
+          </button>
+          <button
+            onClick={() => router.push('/leaves/apply')}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>{locale === 'ar' ? 'نموذج الإجازة المفصل' : 'Full Leave Form'}</span>
+          </button>
+        </div>
       </div>
+
+      {feedbackMsg && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+          <span>✓ {feedbackMsg}</span>
+          <button onClick={() => setFeedbackMsg(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+        </div>
+      )}
 
       {/* Leave Balance Quotas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -251,57 +309,80 @@ export default function LeavesPage() {
               </button>
             </div>
 
-            <div className="space-y-4 my-5 text-xs">
+            <form onSubmit={handleSubmitModalLeave} className="space-y-4 my-5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">نوع الإجازة</label>
-                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                  <option>إجازة سنوية اعتيادية (Annual Leave)</option>
-                  <option>إجازة مرضية (Sick Leave - تقرير طبي)</option>
-                  <option>إجازة عارضة (Casual Leave)</option>
-                  <option>إجازة حج (مرة واحدة في الخدمة)</option>
+                <select
+                  value={newLeave.leave_type_id}
+                  onChange={(e) => setNewLeave({ ...newLeave, leave_type_id: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                >
+                  {leaveTypes.map((lt) => (
+                    <option key={lt.id} value={lt.id}>{lt.name} ({lt.code})</option>
+                  ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">تاريخ البدء</label>
-                  <input type="date" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                  <input
+                    type="date"
+                    required
+                    value={newLeave.start_date}
+                    onChange={(e) => setNewLeave({ ...newLeave, start_date: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">تاريخ الانتهاء</label>
-                  <input type="date" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                  <input
+                    type="date"
+                    required
+                    value={newLeave.end_date}
+                    onChange={(e) => setNewLeave({ ...newLeave, end_date: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">سبب الإجازة وملاحظات التغطية</label>
-                <textarea rows={3} placeholder="يرجى كتابة سبب الإجازة وزميل العمل المغطي للمهام..." className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                <textarea
+                  rows={3}
+                  required
+                  value={newLeave.reason}
+                  onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })}
+                  placeholder="يرجى كتابة سبب الإجازة وزميل العمل المغطي للمهام..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                />
               </div>
 
               <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-blue-700">
                 <p className="font-semibold">تأمين المستندات في التخزين الخاص:</p>
                 <p className="mt-0.5 text-[11px] text-blue-600">أي تقارير طبية مرفقة تُخزن في مجلد خاص مشفر (storage/app/private) ولا تتاح إلا للمدير المخول.</p>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => setIsApplyModalOpen(false)}
-                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={() => { setIsApplyModalOpen(false); alert('تم تقديم طلب الإجازة بنجاح'); }}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-sm"
-              >
-                إرسال الطلب للاعتماد
-              </button>
-            </div>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsApplyModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm"
+                >
+                  {submitting ? 'جاري الإرسال...' : 'إرسال الطلب للاعتماد'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </DashboardLayout>
   );
 }
-

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class LearningController extends Controller
 {
@@ -44,17 +45,57 @@ class LearningController extends Controller
         ],
     ];
 
+    protected function getAllCourses(): array
+    {
+        $custom = Cache::get('hr_custom_courses', []);
+        return array_merge($custom, $this->courses);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->courses,
+            'data' => $this->getAllCourses(),
         ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'title_ar' => 'required|string|max:200',
+            'title_en' => 'nullable|string|max:200',
+            'category' => 'required|string|max:100',
+            'instructor' => 'required|string|max:120',
+            'duration' => 'required|string|max:100',
+            'is_mandatory' => 'boolean',
+        ]);
+
+        $newCourse = [
+            'id' => 'CRS-' . strtoupper(substr(md5((string) microtime(true)), 0, 5)),
+            'title_ar' => $validated['title_ar'],
+            'title_en' => $validated['title_en'] ?: $validated['title_ar'],
+            'category' => $validated['category'],
+            'instructor' => $validated['instructor'],
+            'duration' => $validated['duration'],
+            'is_mandatory' => (bool) ($validated['is_mandatory'] ?? false),
+            'enrolled_count' => 1,
+        ];
+
+        $custom = Cache::get('hr_custom_courses', []);
+        array_unshift($custom, $newCourse);
+        Cache::put('hr_custom_courses', $custom, now()->addDays(30));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Course created successfully',
+            'data' => $newCourse,
+        ], 201);
     }
 
     public function show(string $id): JsonResponse
     {
-        $course = collect($this->courses)->firstWhere('id', $id) ?? $this->courses[0];
+        $all = $this->getAllCourses();
+        $course = collect($all)->firstWhere('id', $id) ?? $all[0];
 
         return response()->json([
             'success' => true,

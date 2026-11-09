@@ -208,6 +208,12 @@ class ApiClient {
     },
   };
 
+  public designations = {
+    list: async () => {
+      return this.request<{ data: any[] }>('/designations');
+    },
+  };
+
   // Employees & Dossier 360
   public employees = {
     list: async (params?: { branch_id?: string; department_id?: string; company_id?: string; search?: string; per_page?: string | number }) => {
@@ -238,12 +244,21 @@ class ApiClient {
 
   // Attendance (Dual Hardware Biometric & GPS Mobile)
   public attendance = {
+    logs: async () => {
+      return this.request<{ success: boolean; data: { punches: any[]; records: any[]; stats: any } }>('/attendance/logs');
+    },
+    reconcile: async () => {
+      return this.request<{ success: boolean; message: string; output?: string }>('/attendance/reconcile', {
+        method: 'POST',
+      });
+    },
     punch: async (payload: {
       punch_type: 'CHECK_IN' | 'CHECK_OUT';
       latitude?: number;
       longitude?: number;
       device_source: 'MOBILE_APP' | 'BIOMETRIC_CLOCK' | 'MANUAL_WEB';
       wifi_bssid?: string;
+      employee_id?: string;
     }) => {
       return this.request<{ success: boolean; data: any; message: string }>('/attendance/punch', {
         method: 'POST',
@@ -257,6 +272,9 @@ class ApiClient {
 
   // Leaves & Absence
   public leaves = {
+    types: async () => {
+      return this.request<{ success: boolean; data: any[] }>('/leaves/types');
+    },
     list: async () => {
       return this.request<{ data: any[] }>('/leaves');
     },
@@ -265,8 +283,9 @@ class ApiClient {
       start_date: string;
       end_date: string;
       reason?: string;
+      employee_id?: string;
     }) => {
-      return this.request<{ success: boolean; data: any }>('/leaves', {
+      return this.request<{ success: boolean; data: any; message?: string }>('/leaves', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -559,6 +578,19 @@ class ApiClient {
   public learning = {
     listCourses: async () => {
       return this.request<{ success: boolean; data: any[] }>('/learning/courses');
+    },
+    createCourse: async (payload: {
+      title: string;
+      category: string;
+      duration: string;
+      instructor: string;
+      description?: string;
+      mandatory?: boolean;
+    }) => {
+      return this.request<{ success: boolean; data: any; message: string }>('/learning/courses', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
     getCourse: async (id: string) => {
       return this.request<{ success: boolean; data: any }>(`/learning/courses/${id}`);
