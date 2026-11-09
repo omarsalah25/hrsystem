@@ -8,6 +8,7 @@ import { Network, Users, ChevronDown, Building, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface OrgNode {
+  id?: string;
   name: string;
   role: string;
   dept: string;
@@ -16,79 +17,6 @@ interface OrgNode {
   reportsCount?: number;
   children?: OrgNode[];
 }
-
-const orgData: OrgNode = {
-  name: 'أ. عبدالعزيز الراجحي',
-  role: 'الرئيس التنفيذي (CEO)',
-  dept: 'الإدارة التنفيذية العليا',
-  flag: '🇸🇦',
-  branch: 'المقر الرئيسي (الرياض)',
-  reportsCount: 148,
-  children: [
-    {
-      name: 'د. عبدالله السعيد',
-      role: 'مدير عام الموارد البشرية (HR Director)',
-      dept: 'الموارد البشرية والإدارية',
-      flag: '🇸🇦',
-      branch: 'فرع الرياض',
-      reportsCount: 12,
-      children: [
-        {
-          name: 'سارة محمد القحطاني',
-          role: 'HR Operations Lead',
-          dept: 'الموارد البشرية',
-          flag: '🇸🇦',
-          branch: 'فرع الرياض',
-          reportsCount: 4,
-        },
-      ],
-    },
-    {
-      name: 'م. فهد الدوسري',
-      role: 'الرئيس التنفيذي للتقنية (CTO)',
-      dept: 'تقنية المعلومات والهندسة',
-      flag: '🇸🇦',
-      branch: 'المقر الرئيسي (الرياض)',
-      reportsCount: 65,
-      children: [
-        {
-          name: 'عبدالله سعد العتيبي',
-          role: 'Senior Software Engineer',
-          dept: 'هندسة البرمجيات',
-          flag: '🇸🇦',
-          branch: 'فرع الرياض',
-          reportsCount: 8,
-        },
-        {
-          name: 'أحمد محمود الشافعي',
-          role: 'Lead Backend Engineer',
-          dept: 'تطوير الأنظمة الخلفية',
-          flag: '🇪🇬',
-          branch: 'فرع القاهرة',
-          reportsCount: 14,
-        },
-      ],
-    },
-    {
-      name: 'أ. طارق عبدالفتاح',
-      role: 'المدير المالي التنفيذي (CFO)',
-      dept: 'الشؤون المالية والرواتب',
-      flag: '🇪🇬',
-      branch: 'فرع القاهرة',
-      reportsCount: 18,
-      children: [
-        {
-          name: 'نورهان طارق المنشاوي',
-          role: 'Senior Payroll Specialist',
-          dept: 'الرواتب والأجور',
-          flag: '🇪🇬',
-          branch: 'فرع القاهرة',
-          reportsCount: 3,
-        },
-      ],
-    },
-  ],
-};
 
 function OrgCard({ node }: { node: OrgNode }) {
   return (
@@ -103,11 +31,11 @@ function OrgCard({ node }: { node: OrgNode }) {
       <p className="text-[11px] font-semibold text-blue-600 mt-0.5">{node.role}</p>
       <p className="text-[10px] text-slate-400 mt-0.5">{node.branch}</p>
 
-      {node.reportsCount && (
+      {node.reportsCount ? (
         <span className="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[9px] font-bold">
           👥 {node.reportsCount} مرؤوس
         </span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -132,6 +60,28 @@ export default function OrgChartPage() {
         setIsLoadingOrg(false);
       });
   }, []);
+
+  const companies = liveOrg?.companies || [];
+  const employees = liveOrg?.employees || [];
+  const mainCompany = companies[0];
+
+  const dynamicOrgData: OrgNode = {
+    name: mainCompany?.trade_name || mainCompany?.legal_name || 'الكيان القانوني',
+    role: 'الكيان القانوني الرئيسي (Main Legal Entity)',
+    dept: mainCompany?.departments?.[0]?.name || 'الإدارة العامة',
+    flag: mainCompany?.country_code === 'EGY' ? '🇪🇬' : '🇸🇦',
+    branch: mainCompany?.branches?.[0]?.name || 'المقر الرئيسي',
+    reportsCount: employees.length,
+    children: employees.map((emp: any) => ({
+      id: emp.id,
+      name: emp.name,
+      role: emp.role,
+      dept: emp.department,
+      flag: mainCompany?.country_code === 'EGY' ? '🇪🇬' : '🇸🇦',
+      branch: emp.branch,
+      reportsCount: 0,
+    })),
+  };
 
   if (isLoadingOrg) {
     return (
@@ -160,7 +110,7 @@ export default function OrgChartPage() {
       {/* Visual Canvas Tree */}
       <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xs overflow-x-auto min-h-[500px] flex flex-col items-center">
         {/* CEO Root */}
-        <OrgCard node={orgData} />
+        <OrgCard node={dynamicOrgData} />
 
         {/* Tree Branch Line */}
         <div className="w-0.5 h-8 bg-slate-300 my-1"></div>
@@ -168,7 +118,7 @@ export default function OrgChartPage() {
 
         {/* Direct Reports Level 1 */}
         <div className="flex justify-around w-full mt-4 gap-6">
-          {orgData.children?.map((cLevel, idx) => (
+          {dynamicOrgData.children?.map((cLevel, idx) => (
             <div key={idx} className="flex flex-col items-center flex-1">
               <div className="w-0.5 h-6 bg-slate-300 mb-1"></div>
               <OrgCard node={cLevel} />

@@ -49,46 +49,7 @@ export default function PayrollPage() {
   const [approving, setApproving] = useState(false);
   const [isLoadingPayroll, setIsLoadingPayroll] = useState(true);
 
-  const [employeesPayroll, setEmployeesPayroll] = useState<PayslipPreviewData[]>([
-    {
-      id: '01a1abf6-cbbf-71d4-9ab6-a77c3330e803',
-      empNo: 'EMP-SA-001',
-      name: 'عبدالله سعد العتيبي',
-      dept: 'تقنية المعلومات (IT)',
-      role: 'Senior Software Engineer',
-      bank: 'مصرف الراجحي (Al Rajhi)',
-      iban: 'SA0380000000608010167519',
-      basic: 18000,
-      housing: 4500,
-      transport: 1500,
-      gross: 24000,
-      eeInsurance: 2193.75,
-      tax: 0,
-      net: 21806.25,
-      currency: 'SAR',
-      flag: '🇸🇦',
-      jurisdiction: 'المملكة العربية السعودية (GOSI & WPS)',
-    },
-    {
-      id: 'SAMPLE_PAYSLIP_EMP_SA001',
-      empNo: 'EMP-EG-001',
-      name: 'أحمد محمود الشافعي',
-      dept: 'تقنية المعلومات (IT)',
-      role: 'Lead Backend Engineer',
-      bank: 'البنك الأهلي المصري (NBE)',
-      iban: 'EG380002000100000001234567890',
-      basic: 25000,
-      housing: 0,
-      transport: 3000,
-      gross: 28000,
-      eeInsurance: 1386.00,
-      tax: 2840.00,
-      net: 23774.00,
-      currency: 'EGP',
-      flag: '🇪🇬',
-      jurisdiction: 'جمهورية مصر العربية (قانون 148 وضريبة الدخل 30)',
-    },
-  ]);
+  const [employeesPayroll, setEmployeesPayroll] = useState<PayslipPreviewData[]>([]);
 
   const loadPayrollRuns = () => {
     api.payroll.list().then((res: any) => {
@@ -97,37 +58,40 @@ export default function PayrollPage() {
         : Array.isArray(res?.data)
         ? res.data
         : [];
+      setPayrollRuns(list);
       if (list.length > 0) {
-        setPayrollRuns(list);
         api.payroll.get(list[0].id).then((detailRes: any) => {
           const slips = detailRes?.data?.payslips || [];
-          if (slips.length > 0) {
-            const mapped: PayslipPreviewData[] = slips.map((s: any) => {
-              const isEg = s.currency === 'EGP' || s.employee?.employee_number?.includes('EG');
-              return {
-                id: s.id,
-                empNo: s.employee?.employee_number || 'EMP-001',
-                name: s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : 'موظف',
-                dept: s.employee?.department?.name || 'تقنية المعلومات',
-                role: s.employee?.designation?.title || 'Engineer',
-                bank: s.employee?.bank_name || (isEg ? 'البنك الأهلي المصري' : 'مصرف الراجحي'),
-                iban: s.employee?.iban || 'SA0380000000608010167519',
-                basic: Number(s.basic_salary || 0),
-                housing: Number(s.housing_allowance || 0),
-                transport: Number(s.transport_allowance || 0),
-                gross: Number(s.gross_salary || 0),
-                eeInsurance: Number(s.employee_social_insurance || 0),
-                tax: Number(s.income_tax || 0),
-                net: Number(s.net_salary || 0),
-                currency: s.currency || (isEg ? 'EGP' : 'SAR'),
-                flag: isEg ? '🇪🇬' : '🇸🇦',
-                jurisdiction: isEg
-                  ? 'جمهورية مصر العربية (قانون 148 وضريبة الدخل 30)'
-                  : 'المملكة العربية السعودية (GOSI & WPS)',
-              };
-            });
-            setEmployeesPayroll(mapped);
-          }
+          const mapped: PayslipPreviewData[] = slips.map((s: any) => {
+            const sal = s.employee?.current_salary || s.employee?.currentSalary;
+            const isEg = sal?.currency === 'EGP' || s.employee?.employee_number?.includes('EG');
+            const grossVal = Number(s.gross_earnings ?? s.gross_salary ?? 0);
+            const basicVal = Number(sal?.base_salary ?? s.basic_salary ?? (grossVal * 0.75));
+            const housingVal = Number(sal?.housing_allowance ?? s.housing_allowance ?? (grossVal * 0.1875));
+            const transportVal = Number(sal?.transportation_allowance ?? s.transport_allowance ?? (grossVal * 0.0625));
+            return {
+              id: s.id,
+              empNo: s.employee?.employee_number || 'EMP-001',
+              name: s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : 'موظف',
+              dept: s.employee?.department?.name || 'تقنية المعلومات',
+              role: s.employee?.designation?.title || 'Engineer',
+              bank: s.employee?.bank_name || (isEg ? 'البنك الأهلي المصري' : 'مصرف الراجحي'),
+              iban: s.employee?.iban || 'SA0380000000608010167519',
+              basic: basicVal,
+              housing: housingVal,
+              transport: transportVal,
+              gross: grossVal,
+              eeInsurance: Number(s.employee_social_insurance || 0),
+              tax: Number(s.income_tax || 0),
+              net: Number(s.net_pay ?? s.net_salary ?? 0),
+              currency: sal?.currency || (isEg ? 'EGP' : 'SAR'),
+              flag: isEg ? '🇪🇬' : '🇸🇦',
+              jurisdiction: isEg
+                ? 'جمهورية مصر العربية (قانون 148 وضريبة الدخل 30)'
+                : 'المملكة العربية السعودية (GOSI & WPS)',
+            };
+          });
+          setEmployeesPayroll(mapped);
         }).catch(() => {});
       }
     }).catch(console.error).finally(() => setIsLoadingPayroll(false));

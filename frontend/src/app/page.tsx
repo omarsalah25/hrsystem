@@ -47,13 +47,15 @@ export default function DashboardPage() {
     saudi_nationals: number;
     egyptian_nationals: number;
   }>({
-    total_headcount: 4,
-    active_headcount: 4,
-    saudi_nationals: 2,
-    egyptian_nationals: 2,
+    total_headcount: 0,
+    active_headcount: 0,
+    saudi_nationals: 0,
+    egyptian_nationals: 0,
   });
 
   const [dashboardEmployees, setDashboardEmployees] = useState<any[]>([]);
+  const [realPayslipId, setRealPayslipId] = useState<string>('current');
+  const [pendingLeavesCount, setPendingLeavesCount] = useState<number>(0);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
 
   React.useEffect(() => {
@@ -65,16 +67,33 @@ export default function DashboardPage() {
           }
         })
         .catch(() => {}),
-      api.employees.list({ per_page: 5 })
+      api.employees.list({ per_page: 20 })
         .then((res: any) => {
           const rawItems = Array.isArray(res?.data)
             ? res.data
             : Array.isArray(res?.data?.data)
             ? res.data.data
             : [];
-          if (rawItems.length > 0) {
-            setDashboardEmployees(rawItems);
+          setDashboardEmployees(rawItems);
+        })
+        .catch(() => {}),
+      api.payroll.list()
+        .then((res: any) => {
+          const runs = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : [];
+          if (runs.length > 0) {
+            api.payroll.get(runs[0].id).then((detail: any) => {
+              const slips = detail?.data?.payslips || [];
+              if (slips.length > 0) {
+                setRealPayslipId(slips[0].id);
+              }
+            }).catch(() => {});
           }
+        })
+        .catch(() => {}),
+      api.leaves.list()
+        .then((res: any) => {
+          const list = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : [];
+          setPendingLeavesCount(list.filter((l: any) => l.status !== 'APPROVED' && l.status !== 'REJECTED').length);
         })
         .catch(() => {}),
     ]).finally(() => {
@@ -261,7 +280,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-slate-500 font-medium">{t('dashboard.payroll_estimate')}</p>
-              <p className="text-2xl font-black text-slate-800">SAR 93.5K</p>
+              <p className="text-2xl font-black text-slate-800">SAR 24.0K</p>
             </div>
           </div>
         </div>
@@ -332,47 +351,46 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  <tr className="hover:bg-slate-50/80 transition">
-                    <td className="p-4 font-mono font-bold text-blue-700">EMP-SA-001</td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-900">عبدالله سعد العتيبي</div>
-                      <div className="text-xs text-slate-400">abdullah@futuregroup.com</div>
-                    </td>
-                    <td className="p-4 text-slate-600">تقنية المعلومات (IT)</td>
-                    <td className="p-4 text-slate-700 font-medium">Senior Software Engineer</td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md">
-                        🇸🇦 فرع الرياض
-                      </span>
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">SAR 24,000</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold">
-                        {t('employees.active')}
-                      </span>
-                    </td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-50/80 transition">
-                    <td className="p-4 font-mono font-bold text-blue-700">EMP-EG-001</td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-900">أحمد محمود الشافعي</div>
-                      <div className="text-xs text-slate-400">ahmed.elshafey@futuregroup.com</div>
-                    </td>
-                    <td className="p-4 text-slate-600">تقنية المعلومات (IT)</td>
-                    <td className="p-4 text-slate-700 font-medium">Lead Backend Engineer</td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md">
-                        🇪🇬 فرع القاهرة
-                      </span>
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">EGP 28,000</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold">
-                        {t('employees.active')}
-                      </span>
-                    </td>
-                  </tr>
+                  {dashboardEmployees.map((emp: any) => {
+                    const sal = emp.current_salary || emp.currentSalary;
+                    const totalSal = sal
+                      ? Number(sal.base_salary || 0) + Number(sal.housing_allowance || 0) + Number(sal.transportation_allowance || 0)
+                      : 0;
+                    const curr = sal?.currency || (emp.company?.country_code === 'EGY' ? 'EGP' : 'SAR');
+                    return (
+                      <tr
+                        key={emp.id}
+                        onClick={() => router.push(`/employees/${emp.id}`)}
+                        className="hover:bg-slate-50/80 transition cursor-pointer"
+                      >
+                        <td className="p-4 font-mono font-bold text-blue-700">{emp.employee_number}</td>
+                        <td className="p-4">
+                          <div className="font-bold text-slate-900">{emp.full_name || `${emp.first_name} ${emp.last_name}`}</div>
+                          <div className="text-xs text-slate-400">{emp.work_email}</div>
+                        </td>
+                        <td className="p-4 text-slate-600">{emp.department?.name || '—'}</td>
+                        <td className="p-4 text-slate-700 font-medium">{emp.designation?.title || '—'}</td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md">
+                            {emp.company?.country_code === 'EGY' ? '🇪🇬' : '🇸🇦'} {emp.branch?.name || 'المقر الرئيسي'}
+                          </span>
+                        </td>
+                        <td className="p-4 font-bold text-slate-900">{curr} {totalSal.toLocaleString()}</td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold">
+                            {emp.employment_status === 'ACTIVE' ? t('employees.active') : emp.employment_status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {dashboardEmployees.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 text-xs">
+                        لا يوجد موظفون مسجلون حالياً.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -485,7 +503,7 @@ export default function DashboardPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
                 <button
-                  onClick={() => api.documents.downloadPayslip('01a1abf6-cbbf-71d4-9ab6-a77c3330e803')}
+                  onClick={() => api.documents.downloadPayslip(realPayslipId)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
                 >
                   <Download className="w-4 h-4" />
@@ -538,7 +556,7 @@ export default function DashboardPage() {
 
               <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
                 <p className="text-xs text-amber-600 font-semibold">{t('leaves.pending_approvals')}</p>
-                <p className="text-2xl font-black text-amber-900 mt-1">2 طلب</p>
+                <p className="text-2xl font-black text-amber-900 mt-1">{pendingLeavesCount} طلب</p>
                 <p className="text-[11px] text-amber-500 mt-1">بانتظار اعتماد المدير المباشر</p>
               </div>
             </div>

@@ -57,21 +57,11 @@ export default function SettingsPage() {
       id: 'dev-1',
       code: 'ZK',
       name: 'ZKTeco SilkBio-101TC',
-      serial: 'BKD81900214',
+      serial: 'ZKT-BIO-RIYADH-01',
       ip: '192.168.1.120',
-      branch: '🇸🇦 فرع الرياض',
+      branch: '🇸🇦 فرع الرياض الرئيسي - العليا',
       status: '🟢 متصل (Online)',
       badgeClass: 'bg-blue-100 text-blue-700',
-    },
-    {
-      id: 'dev-2',
-      code: 'HK',
-      name: 'Hikvision DS-K1T671MF (Face Recognition)',
-      serial: 'HIK992014',
-      ip: '192.168.10.45',
-      branch: '🇪🇬 فرع القاهرة',
-      status: '🟢 متصل (Online)',
-      badgeClass: 'bg-purple-100 text-purple-700',
     },
   ]);
 

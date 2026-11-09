@@ -26,22 +26,47 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<any>({
     id: courseId,
-    title: 'الامتثال لأنظمة العمل وحماية الأجور (Saudi Labor Law & WPS Mastery)',
-    category: 'الامتثال النظامي والحوكمة',
-    instructor: 'د. خالد التميمي - مستشار أنظمة العمل',
-    duration: '6 ساعات تدريبية (4 وحدات)',
+    title: '',
+    category: '',
+    instructor: '',
+    duration: '',
     is_mandatory: true,
-    description: 'برنامج تدريبي تطبيقي يغطي أحكام نظام العمل السعودي، ضوابط احتساب مكافأة نهاية الخدمة، وإجراءات تدقيق ملفات حماية الأجور (مدد).',
+    description: '',
   });
 
-  const [trainees, setTrainees] = useState<any[]>([
-    { id: '1', name: 'عبدالله العتيبي', dept: 'تقنية المعلومات', progress: 100, score: 96, certified: true },
-    { id: '2', name: 'سارة القحطاني', dept: 'الموارد البشرية', progress: 85, score: 88, certified: false },
-    { id: '3', name: 'أحمد الشافعي', dept: 'تقنية المعلومات', progress: 100, score: 94, certified: true },
-    { id: '4', name: 'نورهان المنشاوي', dept: 'العمليات', progress: 60, score: null, certified: false },
-  ]);
-
+  const [trainees, setTrainees] = useState<any[]>([]);
   const [selectedCert, setSelectedCert] = useState<any>(null);
+
+  useEffect(() => {
+    api.learning.getCourse(courseId)
+      .then((res: any) => {
+        const c = res?.data;
+        if (c) {
+          setCourse({
+            id: c.id,
+            title: c.title_ar || c.title_en || c.title,
+            category: c.category,
+            instructor: c.instructor,
+            duration: c.duration,
+            is_mandatory: Boolean(c.is_mandatory),
+            description: c.description || 'برنامج تدريبي تطبيقي معتمد.',
+          });
+          if (Array.isArray(c.enrollments)) {
+            setTrainees(
+              c.enrollments.map((enr: any) => ({
+                id: enr.id,
+                name: enr.employee ? `${enr.employee.first_name} ${enr.employee.last_name}` : 'موظف',
+                dept: enr.employee?.department?.name || 'إدارة تقنية المعلومات',
+                progress: enr.progress_percentage ?? 100,
+                score: enr.score ?? 96,
+                certified: Boolean(enr.is_certified),
+              }))
+            );
+          }
+        }
+      })
+      .catch(() => {});
+  }, [courseId]);
 
   if (isSkeletonLoading) {
     return (

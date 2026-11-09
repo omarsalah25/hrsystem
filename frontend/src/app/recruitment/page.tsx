@@ -43,11 +43,29 @@ export default function RecruitmentPage() {
     max_budget: 22000,
   });
 
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+
   const loadOpenings = () => {
     api.recruitment.listOpenings().then(res => {
-      if (res?.data && res.data.length > 0) {
-        setOpenings(res.data);
-      }
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setOpenings(list);
+      const allApps: Candidate[] = [];
+      list.forEach((op: any) => {
+        if (Array.isArray(op.applications)) {
+          op.applications.forEach((app: any) => {
+            allApps.push({
+              id: app.id,
+              name: app.candidate_name,
+              role: op.title_ar || op.title_en || 'مرشح',
+              rating: Number(app.scorecard_rating || 4.5),
+              experienceYears: 5,
+              stage: (app.stage === 'REJECTED' ? 'APPLIED' : app.stage) || 'APPLIED',
+              source: app.candidate_email || 'LinkedIn Inbound',
+            });
+          });
+        }
+      });
+      setCandidates(allApps);
     }).catch(console.error).finally(() => setIsLoadingRecruitment(false));
   };
 
@@ -75,45 +93,6 @@ export default function RecruitmentPage() {
     }
   };
 
-  const [candidates, setCandidates] = useState<Candidate[]>([
-    {
-      id: '1',
-      name: 'م. عمر خالد السالم',
-      role: 'Senior Full Stack Engineer',
-      rating: 4.5,
-      experienceYears: 6,
-      stage: 'INTERVIEW',
-      source: 'LinkedIn Inbound',
-    },
-    {
-      id: '2',
-      name: 'أ. دينا مصطفى فهمي',
-      role: 'Product Designer (UI/UX)',
-      rating: 4.8,
-      experienceYears: 5,
-      stage: 'OFFER',
-      source: 'Internal Referral',
-    },
-    {
-      id: '3',
-      name: 'م. يوسف حسن المنصور',
-      role: 'DevOps & Cloud Engineer',
-      rating: 4.2,
-      experienceYears: 4,
-      stage: 'SCREENING',
-      source: 'Careers Portal',
-    },
-    {
-      id: '4',
-      name: 'أ. حازم رضوان السيد',
-      role: 'Senior Financial Analyst',
-      rating: 3.9,
-      experienceYears: 7,
-      stage: 'APPLIED',
-      source: 'LinkedIn Inbound',
-    },
-  ]);
-
   const stages = [
     { key: 'APPLIED', label: locale === 'ar' ? 'تم التقديم' : 'Applied', color: 'border-slate-300' },
     { key: 'SCREENING', label: locale === 'ar' ? 'الفرز الأولي' : 'Screening', color: 'border-blue-400' },
@@ -122,18 +101,22 @@ export default function RecruitmentPage() {
     { key: 'HIRED', label: locale === 'ar' ? 'تم التعيين' : 'Hired', color: 'border-emerald-500' },
   ];
 
-  const advanceCandidate = (id: string) => {
+  const advanceCandidate = async (id: string) => {
     const stageOrder: Candidate['stage'][] = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED'];
+    const target = candidates.find((c) => c.id === id);
+    if (!target) return;
+    const currentIndex = stageOrder.indexOf(target.stage);
+    const nextIndex = Math.min(currentIndex + 1, stageOrder.length - 1);
+    const nextStage = stageOrder[nextIndex];
     setCandidates((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const currentIndex = stageOrder.indexOf(c.stage);
-          const nextIndex = Math.min(currentIndex + 1, stageOrder.length - 1);
-          return { ...c, stage: stageOrder[nextIndex] };
-        }
-        return c;
-      })
+      prev.map((c) => (c.id === id ? { ...c, stage: nextStage } : c))
     );
+    try {
+      await api.recruitment.updateStage(id, nextStage);
+      loadOpenings();
+    } catch (e) {
+      console.warn('Could not persist candidate stage:', e);
+    }
   };
 
   if (isLoadingRecruitment) {

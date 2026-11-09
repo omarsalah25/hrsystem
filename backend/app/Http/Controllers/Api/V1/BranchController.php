@@ -54,7 +54,8 @@ class BranchController extends Controller
             'attendance_mode' => 'nullable|in:BIOMETRIC_ONLY,MOBILE_GEOFENCE_ONLY,BOTH,ANY',
         ]);
 
-        $validated['tenant_id'] = $request->user()->tenant_id;
+        $company = \App\Models\Company::find($validated['company_id']);
+        $validated['tenant_id'] = $company?->tenant_id ?? $request->user()->tenant_id;
         $validated['timezone'] = $validated['timezone'] ?? 'Asia/Riyadh';
         $validated['geofence_radius_meters'] = $validated['geofence_radius_meters'] ?? 200;
         $validated['attendance_mode'] = $validated['attendance_mode'] ?? 'BOTH';

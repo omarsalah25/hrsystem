@@ -37,19 +37,7 @@ export default function EmployeeRelationsPage() {
   const { can } = usePermissions();
   const isAr = locale === 'ar';
 
-  const [cases, setCases] = useState<GrievanceCase[]>([
-    {
-      id: '1',
-      caseNumber: 'GRC-2026-0001',
-      title: 'طلب مراجعة درجات التكييف والإضاءة في قاعة العمليات بالرياض',
-      category: 'خلافات بيئة العمل والصحة المهنية',
-      isAnonymous: true,
-      complainant: 'سارة محمد القحطاني',
-      assignedInvestigator: 'لجنة المرافق والسلامة',
-      dateFiled: '2026-11-02',
-      status: 'RESOLVED',
-    },
-  ]);
+  const [cases, setCases] = useState<GrievanceCase[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -72,20 +60,18 @@ export default function EmployeeRelationsPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: GrievanceCase[] = rawItems.map((g: any) => ({
-            id: g.id,
-            caseNumber: g.case_number || `GRC-${g.id.slice(0, 6)}`,
-            title: g.incident_description ? (g.incident_description.length > 65 ? g.incident_description.slice(0, 65) + '...' : g.incident_description) : 'شكوى إدارية',
-            category: g.category || 'بيئة العمل',
-            isAnonymous: Boolean(g.is_confidential),
-            complainant: g.complainant ? `${g.complainant.first_name} ${g.complainant.last_name}` : 'سرّي',
-            assignedInvestigator: 'لجنة الموارد البشرية',
-            dateFiled: g.created_at ? g.created_at.slice(0, 10) : '2026-11-05',
-            status: g.status === 'RESOLVED' ? 'RESOLVED' : 'INVESTIGATING',
-          }));
-          setCases(mapped);
-        }
+        const mapped: GrievanceCase[] = rawItems.map((g: any) => ({
+          id: g.id,
+          caseNumber: g.case_number || `GRC-${g.id.slice(0, 6)}`,
+          title: g.incident_description ? (g.incident_description.length > 65 ? g.incident_description.slice(0, 65) + '...' : g.incident_description) : 'شكوى إدارية',
+          category: g.category || 'بيئة العمل',
+          isAnonymous: Boolean(g.is_confidential),
+          complainant: g.complainant ? `${g.complainant.first_name} ${g.complainant.last_name}` : 'سرّي',
+          assignedInvestigator: 'لجنة الموارد البشرية',
+          dateFiled: g.created_at ? g.created_at.slice(0, 10) : '2026-11-05',
+          status: g.status === 'RESOLVED' ? 'RESOLVED' : 'INVESTIGATING',
+        }));
+        setCases(mapped);
       })
       .catch((err) => {
         console.warn('Failed to load grievances from API:', err);

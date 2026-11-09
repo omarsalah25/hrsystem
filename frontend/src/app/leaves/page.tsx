@@ -47,44 +47,7 @@ export default function LeavesPage() {
     reason: '',
   });
 
-  const [requests, setRequests] = useState<LeaveRequestItem[]>([
-    {
-      id: '1',
-      empName: 'أحمد محمود الشافعي',
-      empNo: 'EMP-EG-001',
-      dept: 'تقنية المعلومات (IT)',
-      type: 'إجازة سنوية (Annual)',
-      startDate: '2026-11-10',
-      endDate: '2026-11-13',
-      totalDays: 4,
-      reason: 'ظرف عائلي خاص وسفر',
-      status: 'PENDING',
-    },
-    {
-      id: '2',
-      empName: 'سارة محمد القحطاني',
-      empNo: 'EMP-SA-002',
-      dept: 'الموارد البشرية (HR)',
-      type: 'إجازة عارضة (Casual)',
-      startDate: '2026-11-06',
-      endDate: '2026-11-06',
-      totalDays: 1,
-      reason: 'مراجعة طبية طارئة',
-      status: 'PENDING',
-    },
-    {
-      id: '3',
-      empName: 'نورهان طارق المنشاوي',
-      empNo: 'EMP-EG-002',
-      dept: 'الشؤون المالية (Finance)',
-      type: 'إجازة سنوية (Annual)',
-      startDate: '2026-11-01',
-      endDate: '2026-11-05',
-      totalDays: 5,
-      reason: 'إجازة سنوية اعتيادية',
-      status: 'APPROVED',
-    },
-  ]);
+  const [requests, setRequests] = useState<LeaveRequestItem[]>([]);
 
   const loadLeaves = () => {
     api.leaves.list()
@@ -95,21 +58,19 @@ export default function LeavesPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: LeaveRequestItem[] = rawItems.map((r: any) => ({
-            id: r.id,
-            empName: r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : 'موظف',
-            empNo: r.employee?.employee_number || 'EMP-001',
-            dept: r.employee?.department?.name || 'إدارة العمليات',
-            type: r.leave_type?.name || 'إجازة سنوية',
-            startDate: r.start_date ? String(r.start_date).slice(0, 10) : '2026-11-10',
-            endDate: r.end_date ? String(r.end_date).slice(0, 10) : '2026-11-12',
-            totalDays: r.total_days || 1,
-            reason: r.reason || 'إجازة شخصية',
-            status: r.status === 'APPROVED' ? 'APPROVED' : r.status === 'REJECTED' ? 'REJECTED' : 'PENDING',
-          }));
-          setRequests(mapped);
-        }
+        const mapped: LeaveRequestItem[] = rawItems.map((r: any) => ({
+          id: r.id,
+          empName: r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : 'موظف',
+          empNo: r.employee?.employee_number || 'EMP-001',
+          dept: r.employee?.department?.name || 'إدارة العمليات',
+          type: r.leave_type?.name || 'إجازة سنوية',
+          startDate: r.start_date ? String(r.start_date).slice(0, 10) : '2026-11-10',
+          endDate: r.end_date ? String(r.end_date).slice(0, 10) : '2026-11-12',
+          totalDays: Number(r.total_days || 1),
+          reason: r.reason || 'إجازة شخصية',
+          status: r.status === 'APPROVED' ? 'APPROVED' : r.status === 'REJECTED' ? 'REJECTED' : 'PENDING',
+        }));
+        setRequests(mapped);
       })
       .catch((err) => {
         console.warn('Could not fetch leaves from API:', err);

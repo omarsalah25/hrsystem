@@ -35,41 +35,7 @@ export default function AssetsPage() {
   const { t, locale } = useTranslation();
   const isAr = locale === 'ar';
 
-  const [assets, setAssets] = useState<AssetItem[]>([
-    {
-      id: '1',
-      name: 'MacBook Pro 16" M3 Max (36GB/1TB)',
-      serialNumber: 'C02G89A1MD6R',
-      category: 'LAPTOP',
-      assignedTo: 'عبدالله سعد العتيبي',
-      assignedEmpNo: 'EMP-SA-001',
-      branch: '🇸🇦 فرع الرياض',
-      status: 'ASSIGNED',
-      purchaseDate: '2023-01-20',
-    },
-    {
-      id: '2',
-      name: 'Dell XPS 15 9530 (i9/32GB)',
-      serialNumber: 'DLX-8829104-EG',
-      category: 'LAPTOP',
-      assignedTo: 'أحمد محمود الشافعي',
-      assignedEmpNo: 'EMP-EG-001',
-      branch: '🇪🇬 فرع القاهرة',
-      status: 'ASSIGNED',
-      purchaseDate: '2023-05-05',
-    },
-    {
-      id: '3',
-      name: 'iPhone 15 Pro (256GB - Corporate SIM)',
-      serialNumber: 'IPH-99214022',
-      category: 'PHONE',
-      assignedTo: 'سارة محمد القحطاني',
-      assignedEmpNo: 'EMP-SA-002',
-      branch: '🇸🇦 فرع الرياض',
-      status: 'ASSIGNED',
-      purchaseDate: '2023-09-01',
-    },
-  ]);
+  const [assets, setAssets] = useState<AssetItem[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -105,23 +71,21 @@ export default function AssetsPage() {
         ? res.data.data
         : [];
 
-      if (rawItems.length > 0) {
-        const mapped: AssetItem[] = rawItems.map((a: any) => {
-          const assignment = a.assignments && a.assignments.length > 0 ? a.assignments[0] : null;
-          return {
-            id: a.id,
-            name: isAr ? (a.name_ar || a.name_en) : (a.name_en || a.name_ar),
-            serialNumber: a.serial_number || a.asset_code,
-            category: a.category || 'LAPTOP',
-            assignedTo: assignment?.employee ? `${assignment.employee.first_name} ${assignment.employee.last_name}` : null,
-            assignedEmpNo: assignment?.employee?.employee_number || null,
-            branch: a.company?.country_code === 'SAU' ? '🇸🇦 فرع الرياض' : '🇪🇬 فرع القاهرة',
-            status: a.status || 'AVAILABLE',
-            purchaseDate: a.purchase_date || '2024-01-01',
-          };
-        });
-        setAssets(mapped);
-      }
+      const mapped: AssetItem[] = rawItems.map((a: any) => {
+        const assignment = a.assignments && a.assignments.length > 0 ? a.assignments[0] : null;
+        return {
+          id: a.id,
+          name: isAr ? (a.name_ar || a.name_en) : (a.name_en || a.name_ar),
+          serialNumber: a.serial_number || a.asset_code,
+          category: a.category || 'LAPTOP',
+          assignedTo: assignment?.employee ? `${assignment.employee.first_name} ${assignment.employee.last_name}` : null,
+          assignedEmpNo: assignment?.employee?.employee_number || null,
+          branch: a.company?.country_code === 'SAU' ? '🇸🇦 فرع الرياض' : '🇪🇬 فرع القاهرة',
+          status: a.status || 'AVAILABLE',
+          purchaseDate: a.purchase_date ? String(a.purchase_date).slice(0, 10) : '2026-01-01',
+        };
+      });
+      setAssets(mapped);
     } catch (err) {
       console.warn('Failed to load assets from API:', err);
     } finally {

@@ -46,35 +46,8 @@ export default function LearningPage() {
   const { can } = usePermissions();
   const isAr = locale === 'ar';
 
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: 'CRS-001',
-      title: 'التوعية بالأمن السيبراني وحماية البيانات (Cybersecurity & GDPR)',
-      category: 'امتثال إلزامي (Compliance)',
-      durationHours: 4,
-      isMandatory: true,
-      enrolledCount: 28,
-      completionRate: 94,
-    },
-    {
-      id: 'CRS-002',
-      title: 'دليل نظام العمل السعودي ومنصة قوى للعقود (Saudi Labor & Qiwa)',
-      category: 'الشؤون القانونية',
-      durationHours: 6,
-      isMandatory: false,
-      enrolledCount: 35,
-      completionRate: 80,
-    },
-    {
-      id: 'CRS-003',
-      title: 'معايير السلامة المهنية والصحة (OSHA Standards)',
-      category: 'سلامة مهنية',
-      durationHours: 8,
-      isMandatory: true,
-      enrolledCount: 14,
-      completionRate: 98,
-    },
-  ]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -98,18 +71,37 @@ export default function LearningPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: Course[] = rawItems.map((c: any) => ({
-            id: c.id,
-            title: isAr ? (c.title_ar || c.title) : (c.title_en || c.title_ar || c.title),
-            category: c.category,
-            durationHours: parseInt(c.duration) || 6,
-            isMandatory: Boolean(c.is_mandatory ?? c.mandatory),
-            enrolledCount: c.enrolled_count || 14,
-            completionRate: c.completion_rate || 90,
-          }));
-          setCourses(mapped);
-        }
+        const mapped: Course[] = rawItems.map((c: any) => ({
+          id: c.id,
+          title: isAr ? (c.title_ar || c.title) : (c.title_en || c.title_ar || c.title),
+          category: c.category,
+          durationHours: parseInt(c.duration) || 6,
+          isMandatory: Boolean(c.is_mandatory ?? c.mandatory),
+          enrolledCount: c.enrollments_count ?? c.enrolled_count ?? 1,
+          completionRate: c.completion_rate ?? 100,
+        }));
+        setCourses(mapped);
+
+        const certs: Certificate[] = [];
+        rawItems.forEach((c: any) => {
+          if (Array.isArray(c.enrollments)) {
+            c.enrollments.forEach((enr: any) => {
+              if (enr.is_certified) {
+                certs.push({
+                  id: enr.id,
+                  employeeName: enr.employee ? `${enr.employee.first_name} ${enr.employee.last_name}` : 'موظف',
+                  empNo: enr.employee?.employee_number || 'EMP-SA-001',
+                  certName: c.title_ar || c.title_en,
+                  issuer: c.instructor || 'أكاديمية الموارد البشرية',
+                  expiryDate: '2027-10-15',
+                  daysRemaining: 340,
+                  status: 'VALID',
+                });
+              }
+            });
+          }
+        });
+        setCertificates(certs);
       })
       .catch((err) => {
         console.warn('Could not fetch courses from API:', err);
@@ -147,29 +139,6 @@ export default function LearningPage() {
       setSubmitting(false);
     }
   };
-
-  const certificates: Certificate[] = [
-    {
-      id: '1',
-      employeeName: 'أحمد محمود الشافعي',
-      empNo: 'EMP-EG-001',
-      certName: 'إقامة العمل ورخصة الإقامة (Saudi Work Iqama)',
-      issuer: 'وزارة الموارد البشرية والجوازات',
-      expiryDate: '2026-12-15',
-      daysRemaining: 40,
-      status: 'EXPIRING_SOON',
-    },
-    {
-      id: '2',
-      employeeName: 'عبدالله سعد العتيبي',
-      empNo: 'EMP-SA-001',
-      certName: 'شهادة الاعتماد المهني للهندسة (SCE)',
-      issuer: 'الهيئة السعودية للمهندسين',
-      expiryDate: '2027-06-30',
-      daysRemaining: 600,
-      status: 'VALID',
-    },
-  ];
 
   if (isLoadingLearning) {
     return (

@@ -37,6 +37,14 @@ interface CompanyData {
   country_code: string;
   currency: string;
   employees_count?: number;
+  tenant?: {
+    id: string;
+    name: string;
+    subdomain: string;
+    subscription_plan: string;
+    country_jurisdiction?: string;
+    is_active: boolean;
+  };
 }
 
 interface BranchData {
@@ -87,6 +95,8 @@ export default function CompanyBranchesPage() {
     primary_iban: '',
     country_code: 'SAU',
     currency: 'SAR',
+    subdomain: '',
+    subscription_plan: 'ENTERPRISE',
   });
 
   // New Branch Form State
@@ -149,8 +159,10 @@ export default function CompanyBranchesPage() {
         primary_iban: '',
         country_code: 'SAU',
         currency: 'SAR',
+        subdomain: '',
+        subscription_plan: 'ENTERPRISE',
       });
-      setStatusMessage(isAr ? 'تم تسجيل الكيان القانوني الجديد بنجاح!' : 'Legal entity created successfully!');
+      setStatusMessage(isAr ? 'تم تسجيل الكيان القانوني الجديد وتخصيص المستأجر (Tenant) بنجاح!' : 'Legal entity & dedicated Tenant provisioned successfully!');
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
       await fetchData();
@@ -274,6 +286,14 @@ export default function CompanyBranchesPage() {
                 </span>
               </div>
               <div className="space-y-1.5 text-xs text-slate-600">
+                <div className="mb-2 p-2 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-indigo-700">
+                    🌐 {comp.tenant?.subdomain || 'demo'}.hrsystem.com
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-600 text-white">
+                    {comp.tenant?.subscription_plan || 'ENTERPRISE'}
+                  </span>
+                </div>
                 <p>• {isAr ? 'السجل التجاري:' : 'CR No:'} <span className="font-mono font-bold text-slate-800">{comp.commercial_registration_no || '—'}</span></p>
                 <p>• {isAr ? 'الرقم الضريبي:' : 'Tax No:'} <span className="font-mono font-bold text-slate-800">{comp.tax_registration_no || '—'}</span></p>
                 <p>• {isAr ? 'رقم التأمينات (GOSI/SI):' : 'Social Ins No:'} <span className="font-mono font-bold text-slate-800">{comp.social_insurance_no || '—'}</span></p>
@@ -538,6 +558,47 @@ export default function CompanyBranchesPage() {
                     value={newCompany.currency}
                     className="w-full border border-slate-200 bg-slate-50 font-bold rounded-lg p-2.5"
                   />
+                </div>
+              </div>
+
+              {/* Dedicated Tenant Provisioning Section */}
+              <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-900">
+                    {isAr ? '🌐 تخصيص بيئة المستأجر المستقلة (Dedicated Tenant)' : '🌐 Dedicated Tenant Provisioning'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                    Auto-Provisioned
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">{isAr ? 'النطاق الفرعي (Subdomain)' : 'Tenant Subdomain'}</label>
+                    <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
+                      <input
+                        type="text"
+                        value={newCompany.subdomain}
+                        onChange={(e) => setNewCompany({ ...newCompany, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                        className="w-full p-2.5 font-mono text-xs focus:outline-none"
+                        placeholder="horizon-tech"
+                      />
+                      <span className="px-2 py-2.5 bg-slate-100 text-slate-500 font-mono text-[10px] border-s border-slate-200">
+                        .hrsystem.com
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">{isAr ? 'باقة المستأجر (Plan)' : 'Tenant Plan'}</label>
+                    <select
+                      value={newCompany.subscription_plan}
+                      onChange={(e) => setNewCompany({ ...newCompany, subscription_plan: e.target.value })}
+                      className="w-full border border-slate-300 rounded-lg p-2.5 bg-white font-bold"
+                    >
+                      <option value="ENTERPRISE">ENTERPRISE</option>
+                      <option value="GROWTH">GROWTH</option>
+                      <option value="STARTER">STARTER</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

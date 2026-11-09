@@ -27,10 +27,10 @@ export default function AttendancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [recentPunches, setRecentPunches] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    total_punches: 294,
-    present_count: 14,
-    late_count: 1,
-    geofence_verified: 54,
+    total_punches: 1,
+    present_count: 1,
+    late_count: 0,
+    geofence_verified: 1,
   });
 
   const loadAttendanceData = async () => {
@@ -200,17 +200,17 @@ export default function AttendancePage() {
                 attendanceRecords.map((rec: any) => (
                   <tr key={rec.id} className="hover:bg-slate-50/80">
                     <td className="p-4 font-bold text-slate-900">
-                      <div>{rec.employee ? `${rec.employee.first_name} ${rec.employee.last_name}` : 'عبدالله سعد العتيبي'}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{rec.employee?.employee_number || 'EMP-SA-001'}</div>
+                      <div>{rec.employee ? `${rec.employee.first_name} ${rec.employee.last_name}` : 'موظف'}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{rec.employee?.employee_number || '—'}</div>
                     </td>
-                    <td className="p-4 text-slate-700">{rec.employee?.branch?.name || 'الرياض'}</td>
+                    <td className="p-4 text-slate-700">{rec.employee?.branch?.name || 'المقر الرئيسي'}</td>
                     <td className="p-4 font-mono font-bold text-emerald-700">
-                      {rec.first_in ? String(rec.first_in).slice(11, 16) : '08:52'}
+                      {rec.first_punch_in ? String(rec.first_punch_in).slice(11, 16) : (rec.first_in ? String(rec.first_in).slice(11, 16) : '08:50')}
                     </td>
                     <td className="p-4 font-mono font-bold text-slate-600">
-                      {rec.last_out ? String(rec.last_out).slice(11, 16) : '17:05'}
+                      {rec.last_punch_out ? String(rec.last_punch_out).slice(11, 16) : (rec.last_out ? String(rec.last_out).slice(11, 16) : '17:30')}
                     </td>
-                    <td className="p-4 font-semibold text-slate-800">{rec.worked_hours || 8} ساعة</td>
+                    <td className="p-4 font-semibold text-slate-800">{rec.total_hours_worked || rec.worked_hours || 8} ساعة</td>
                     <td className="p-4 text-slate-500 font-medium">{rec.late_minutes || 0} دقيقة</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 text-[10px] font-black rounded-full ${
@@ -224,24 +224,11 @@ export default function AttendancePage() {
                   </tr>
                 ))
               ) : (
-                <>
-                  <tr className="hover:bg-slate-50/80">
-                    <td className="p-4 font-bold text-slate-900">
-                      <div>عبدالله سعد العتيبي</div>
-                      <div className="text-[10px] text-slate-400 font-mono">EMP-SA-001</div>
-                    </td>
-                    <td className="p-4 text-slate-700">🇸🇦 الرياض</td>
-                    <td className="p-4 font-mono font-bold text-emerald-700">08:52 AM</td>
-                    <td className="p-4 font-mono font-bold text-slate-600">05:08 PM</td>
-                    <td className="p-4 font-semibold text-slate-800">8.25 ساعة</td>
-                    <td className="p-4 text-slate-400 font-medium">0 دقيقة</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-full">
-                        حاضر في الموعد
-                      </span>
-                    </td>
-                  </tr>
-                </>
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
+                    لا توجد سجلات حضور مسجلة حالياً في قاعدة البيانات.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

@@ -48,7 +48,8 @@ class PayrollController extends Controller
         $run = PayrollRun::with([
             'company',
             'payslips.employee.department',
-            'payslips.employee.designation'
+            'payslips.employee.designation',
+            'payslips.employee.currentSalary',
         ])->findOrFail($id);
 
         return response()->json([

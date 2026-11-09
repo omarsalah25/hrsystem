@@ -48,40 +48,7 @@ export default function AuditPage() {
   const [verifyBanner, setVerifyBanner] = useState<string | null>(null);
   const [isLoadingAudit, setIsLoadingAudit] = useState(true);
 
-  const [logs, setLogs] = useState<AuditLog[]>([
-    {
-      id: 'LOG-0001',
-      timestamp: '2026-11-05 00:00:00',
-      actorName: 'System Admin',
-      actorRole: 'SUPER_ADMIN',
-      actionType: 'ROLE_CHANGE',
-      resource: 'SYSTEM',
-      ipAddress: '127.0.0.1',
-      prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
-      currentHash: '78b3912334eb7217525381f2674e2d31e9c20a466c0ef497475be6fe505d933e',
-      isVerified: true,
-      diff: {
-        before: {},
-        after: { action: 'INITIAL_SYSTEM_BOOTSTRAP' },
-      },
-    },
-    {
-      id: 'LOG-0002',
-      timestamp: '2026-11-05 01:15:00',
-      actorName: 'System Admin',
-      actorRole: 'SUPER_ADMIN',
-      actionType: 'SALARY_UPDATE',
-      resource: 'EMP-SA-001',
-      ipAddress: '127.0.0.1',
-      prevHash: '78b3912334eb7217525381f2674e2d31e9c20a466c0ef497475be6fe505d933e',
-      currentHash: '486b71fedb961c7c938d49ea45129668d277712e09ff7bdf88ea4e410b073070',
-      isVerified: true,
-      diff: {
-        before: { base_salary: 16000 },
-        after: { base_salary: 18000 },
-      },
-    },
-  ]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
 
   React.useEffect(() => {
     api.audit.listLogs()
@@ -92,25 +59,23 @@ export default function AuditPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: AuditLog[] = rawItems.map((l: any) => ({
-            id: l.log_number || `LOG-${l.id.slice(0, 6)}`,
-            timestamp: l.created_at || '2026-11-05 03:00:00',
-            actorName: l.actor_name || 'System Admin',
-            actorRole: l.actor_role || 'SUPER_ADMIN',
-            actionType: l.action_type === 'SALARY_CONFIG' ? 'SALARY_UPDATE' : l.action_type || 'ROLE_CHANGE',
-            resource: l.target_resource || 'SYSTEM',
-            ipAddress: l.ip_address || '127.0.0.1',
-            prevHash: l.prev_hash,
-            currentHash: l.current_hash,
-            isVerified: true,
-            diff: {
-              before: {},
-              after: l.payload_diff || {},
-            },
-          }));
-          setLogs(mapped);
-        }
+        const mapped: AuditLog[] = rawItems.map((l: any) => ({
+          id: l.log_number || `LOG-${l.id.slice(0, 6)}`,
+          timestamp: l.created_at ? String(l.created_at).slice(0, 19).replace('T', ' ') : '2026-11-05 03:00:00',
+          actorName: l.actor_name || 'System Admin',
+          actorRole: l.actor_role || 'SUPER_ADMIN',
+          actionType: l.action_type === 'SALARY_CONFIG' ? 'SALARY_UPDATE' : l.action_type || 'ROLE_CHANGE',
+          resource: l.target_resource || 'SYSTEM',
+          ipAddress: l.ip_address || '127.0.0.1',
+          prevHash: l.prev_hash,
+          currentHash: l.current_hash,
+          isVerified: true,
+          diff: {
+            before: {},
+            after: l.payload_diff || {},
+          },
+        }));
+        setLogs(mapped);
       })
       .catch((err: any) => {
         console.warn('Could not fetch audit logs from API:', err);

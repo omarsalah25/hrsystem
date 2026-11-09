@@ -13,10 +13,8 @@ trait BelongsToTenant
         static::addGlobalScope('tenant', function (Builder $builder) {
             $tenantId = null;
 
-            if (request()->hasHeader('X-Tenant-ID')) {
+            if (request()->hasHeader('X-Tenant-ID') && request()->header('X-Tenant-ID') !== 'all') {
                 $tenantId = request()->header('X-Tenant-ID');
-            } elseif (request()->user()) {
-                $tenantId = request()->user()->tenant_id;
             } elseif (app()->bound('current_tenant_id')) {
                 $tenantId = app('current_tenant_id');
             }
@@ -30,11 +28,17 @@ trait BelongsToTenant
             if (!$model->tenant_id) {
                 $tenantId = null;
 
-                if (request()->hasHeader('X-Tenant-ID')) {
+                if (!empty($model->company_id)) {
+                    $tenantId = \App\Models\Company::withoutGlobalScopes()
+                        ->where('id', $model->company_id)
+                        ->value('tenant_id');
+                }
+
+                if (!$tenantId && request()->hasHeader('X-Tenant-ID') && request()->header('X-Tenant-ID') !== 'all') {
                     $tenantId = request()->header('X-Tenant-ID');
-                } elseif (request()->user()) {
+                } elseif (!$tenantId && request()->user()) {
                     $tenantId = request()->user()->tenant_id;
-                } elseif (app()->bound('current_tenant_id')) {
+                } elseif (!$tenantId && app()->bound('current_tenant_id')) {
                     $tenantId = app('current_tenant_id');
                 }
 

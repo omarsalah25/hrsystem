@@ -67,6 +67,8 @@ export default function PlatformAdminDashboardPage() {
     wps_employer_id: '',
     bank_code: 'NCB',
     primary_iban: '',
+    subdomain: '',
+    subscription_plan: 'ENTERPRISE',
   });
 
   const loadData = () => {
@@ -109,9 +111,11 @@ export default function PlatformAdminDashboardPage() {
         wps_employer_id: '',
         bank_code: 'NCB',
         primary_iban: '',
+        subdomain: '',
+        subscription_plan: 'ENTERPRISE',
       });
       loadData();
-      alert(isAr ? 'تم إضافة الكيان القانوني بنجاح!' : 'Legal entity created successfully!');
+      alert(isAr ? 'تم إضافة الكيان القانوني وتخصيص المستأجر (Tenant) بنجاح!' : 'Legal entity & dedicated Tenant provisioned successfully!');
     } catch (err: any) {
       alert(err.message || 'Error creating company');
     }
@@ -258,8 +262,8 @@ export default function PlatformAdminDashboardPage() {
               <span>{isAr ? 'الكيانات القانونية' : 'Legal Entities'}</span>
               <Building2 className="w-4 h-4 text-indigo-400" />
             </div>
-            <p className="text-2xl font-black text-white">{systemTotals.total_companies || companies.length}</p>
-            <span className="text-[10px] text-emerald-400 font-bold block mt-1">🇸🇦 SAU • 🇪🇬 EGY • 🇦🇪 ARE</span>
+            <p className="text-2xl font-black text-white">{systemTotals.total_companies ?? companies.length}</p>
+            <span className="text-[10px] text-emerald-400 font-bold block mt-1">مع مستأجر (Tenant) مستقل</span>
           </div>
 
           <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 shadow-sm">
@@ -267,7 +271,7 @@ export default function PlatformAdminDashboardPage() {
               <span>{isAr ? 'الفروع المعتمدة' : 'Active Branches'}</span>
               <MapPin className="w-4 h-4 text-blue-400" />
             </div>
-            <p className="text-2xl font-black text-white">{systemTotals.total_branches || 4}</p>
+            <p className="text-2xl font-black text-white">{systemTotals.total_branches ?? 1}</p>
             <span className="text-[10px] text-slate-400 block mt-1">مع سياج جغرافي GPS</span>
           </div>
 
@@ -276,9 +280,9 @@ export default function PlatformAdminDashboardPage() {
               <span>{isAr ? 'إجمالي الموظفين' : 'Total Headcount'}</span>
               <Users className="w-4 h-4 text-emerald-400" />
             </div>
-            <p className="text-2xl font-black text-white">{systemTotals.total_employees || 10}</p>
+            <p className="text-2xl font-black text-white">{systemTotals.total_employees ?? 1}</p>
             <span className="text-[10px] text-emerald-400 font-bold block mt-1">
-              {systemTotals.active_employees || 10} نشط حالياً
+              {systemTotals.active_employees ?? 1} نشط حالياً
             </span>
           </div>
 
@@ -287,7 +291,7 @@ export default function PlatformAdminDashboardPage() {
               <span>{isAr ? 'الأقسام الإدارية' : 'Departments'}</span>
               <Layers className="w-4 h-4 text-purple-400" />
             </div>
-            <p className="text-2xl font-black text-white">{systemTotals.total_departments || 5}</p>
+            <p className="text-2xl font-black text-white">{systemTotals.total_departments ?? 1}</p>
             <span className="text-[10px] text-slate-400 block mt-1">عبر كافة الكيانات</span>
           </div>
 
@@ -296,7 +300,7 @@ export default function PlatformAdminDashboardPage() {
               <span>{isAr ? 'الأصول والعهد' : 'Tracked Assets'}</span>
               <Package className="w-4 h-4 text-amber-400" />
             </div>
-            <p className="text-2xl font-black text-white">{systemTotals.total_assets || 6}</p>
+            <p className="text-2xl font-black text-white">{systemTotals.total_assets ?? 1}</p>
             <span className="text-[10px] text-slate-400 block mt-1">أجهزة ومعدات رقمية</span>
           </div>
 
@@ -384,10 +388,13 @@ export default function PlatformAdminDashboardPage() {
                           {flag}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-black text-lg text-white">{comp.trade_name || comp.legal_name}</h3>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 border border-emerald-700 text-emerald-400">
                               {comp.compliance_status || 'معتمد ونشط'}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-950 border border-indigo-700 text-indigo-300">
+                              🌐 Tenant: {comp.tenant?.subdomain || 'demo'}.hrsystem.com ({comp.tenant?.subscription_plan || 'ENTERPRISE'})
                             </span>
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5">
@@ -657,7 +664,7 @@ export default function PlatformAdminDashboardPage() {
                   >
                     <option value="SAU">🇸🇦 المملكة العربية السعودية (KSA)</option>
                     <option value="EGY">🇪🇬 جمهورية مصر العربية (Egypt)</option>
-                    <option value="ARE">🇦🇪 الإمارات العربية المتحدة (UAE)</option>
+                    <option value="UAE">🇦🇪 الإمارات العربية المتحدة (UAE)</option>
                   </select>
                 </div>
 
@@ -672,6 +679,52 @@ export default function PlatformAdminDashboardPage() {
                     onChange={(e) => setNewCompany({ ...newCompany, currency: e.target.value })}
                     className="w-full text-xs rounded-xl border border-slate-800 p-2.5 bg-slate-950 text-white focus:outline-none focus:border-indigo-500"
                   />
+                </div>
+              </div>
+
+              {/* Dedicated Tenant Provisioning Section */}
+              <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-800/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-indigo-300 flex items-center gap-1.5">
+                    <Server className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{isAr ? 'تخصيص بيئة المستأجر المستقلة (Dedicated Tenant Provisioning)' : 'Dedicated Tenant Provisioning'}</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Auto-Isolated Tenant
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      {isAr ? 'النطاق الفرعي للمستأجر (Tenant Subdomain)' : 'Tenant Subdomain'}
+                    </label>
+                    <div className="flex items-center rounded-xl border border-slate-800 bg-slate-950 overflow-hidden focus-within:border-indigo-500">
+                      <input
+                        type="text"
+                        placeholder="future-tech"
+                        value={newCompany.subdomain}
+                        onChange={(e) => setNewCompany({ ...newCompany, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                        className="w-full text-xs p-2.5 bg-transparent text-white font-mono focus:outline-none"
+                      />
+                      <span className="px-2.5 text-[10px] font-mono text-slate-500 bg-slate-900 border-s border-slate-800 py-2.5 shrink-0">
+                        .hrsystem.com
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      {isAr ? 'باقة اشتراك المستأجر (Subscription Plan)' : 'Subscription Plan'}
+                    </label>
+                    <select
+                      value={newCompany.subscription_plan}
+                      onChange={(e) => setNewCompany({ ...newCompany, subscription_plan: e.target.value })}
+                      className="w-full text-xs rounded-xl border border-slate-800 p-2.5 bg-slate-950 text-white focus:outline-none focus:border-indigo-500 font-bold"
+                    >
+                      <option value="ENTERPRISE">ENTERPRISE (غير محدود + متعدد الفروع)</option>
+                      <option value="GROWTH">GROWTH (حتى 250 موظف)</option>
+                      <option value="STARTER">STARTER (حتى 50 موظف)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

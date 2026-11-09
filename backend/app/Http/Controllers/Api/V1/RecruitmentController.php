@@ -14,7 +14,7 @@ class RecruitmentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = JobOpening::with(['department'])
+        $query = JobOpening::with(['department', 'applications'])
             ->withCount([
                 'applications',
                 'applications as applied_count' => fn($q) => $q->where('stage', 'APPLIED'),

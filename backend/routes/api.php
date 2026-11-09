@@ -30,16 +30,50 @@ Route::prefix('v1')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+        // Tenants & Multi-Tenant Provisioning
+        Route::get('/tenants', function () {
+            return response()->json([
+                'success' => true,
+                'data' => \App\Models\Tenant::withCount(['companies', 'users', 'employees'])->get(),
+            ]);
+        });
+        Route::patch('/tenants/{id}', function (\Illuminate\Http\Request $request, string $id) {
+            $tenant = \App\Models\Tenant::findOrFail($id);
+            $validated = $request->validate([
+                'name' => 'nullable|string|max:150',
+                'subdomain' => 'nullable|string|max:63',
+                'subscription_plan' => 'nullable|in:STARTER,GROWTH,ENTERPRISE',
+                'is_active' => 'nullable|boolean',
+            ]);
+            $tenant->update(array_filter($validated, fn($v) => $v !== null));
+            return response()->json(['success' => true, 'data' => $tenant]);
+        })->middleware('role:SUPER_ADMIN,HR_MANAGER');
+
         // Companies & Branches
         Route::get('/companies', [CompanyController::class, 'index']);
         Route::get('/companies/{id}', [CompanyController::class, 'show']);
-        Route::post('/companies', [CompanyController::class, 'store'])->middleware('role:SUPER_ADMIN');
-        Route::match(['put', 'patch'], '/companies/{id}', [CompanyController::class, 'update'])->middleware('role:SUPER_ADMIN');
-        Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->middleware('role:SUPER_ADMIN');
+        Route::post('/companies', [CompanyController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::match(['put', 'patch'], '/companies/{id}', [CompanyController::class, 'update'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         Route::get('/departments', function () {
             return response()->json(['success' => true, 'data' => \App\Models\Department::with('company')->get()]);
         });
+        Route::post('/departments', function (\Illuminate\Http\Request $request) {
+            $validated = $request->validate([
+                'company_id' => 'required|uuid|exists:companies,id',
+                'name' => 'required|string|max:100',
+                'cost_center_code' => 'nullable|string|max:50',
+            ]);
+            $company = \App\Models\Company::find($validated['company_id']);
+            $dept = \App\Models\Department::create([
+                'tenant_id' => $company?->tenant_id ?? $request->user()->tenant_id,
+                'company_id' => $validated['company_id'],
+                'name' => $validated['name'],
+                'cost_center_code' => $validated['cost_center_code'] ?? ('CC-' . rand(100, 999)),
+            ]);
+            return response()->json(['success' => true, 'data' => $dept->load('company')], 201);
+        })->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         Route::get('/designations', function () {
             return response()->json(['success' => true, 'data' => \App\Models\Designation::all()]);
@@ -71,6 +105,7 @@ Route::prefix('v1')->group(function () {
         // Shift Rostering & Ramadan Rules
         Route::get('/shifts', [ShiftController::class, 'index']);
         Route::post('/shifts', [ShiftController::class, 'store'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
+        Route::delete('/shifts/{id}', [ShiftController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Leaves & Absence Management
         Route::get('/leaves/types', [LeaveController::class, 'types']);
@@ -106,6 +141,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/learning/courses/{id}', [LearningController::class, 'show']);
         Route::post('/learning/courses/{id}/enroll', [LearningController::class, 'enroll']);
         Route::post('/learning/courses/{id}/certificate', [LearningController::class, 'issueCertificate']);
+        Route::delete('/learning/courses/{id}', [LearningController::class, 'destroy'])->middleware('role:SUPER_ADMIN,HR_MANAGER');
 
         // Assets & Hardware Custody
         Route::get('/assets', [AssetController::class, 'index']);

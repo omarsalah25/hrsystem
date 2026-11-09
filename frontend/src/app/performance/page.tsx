@@ -44,35 +44,7 @@ export default function PerformancePage() {
     progress_percentage: 25,
   });
 
-  const [goals, setGoals] = useState<OKRGoal[]>([
-    {
-      id: '1',
-      title: 'إطلاق نظام البصمة المزدوج وحماية الأجور للفرعين (الرياض والقاهرة)',
-      owner: 'عبدالله سعد العتيبي',
-      dept: 'تقنية المعلومات (IT)',
-      progress: 85,
-      weight: 40,
-      status: 'ON_TRACK',
-    },
-    {
-      id: '2',
-      title: 'أتمتة احتساب ضرائب كسب العمل المصرية لعام 2024 بدون أي أخطاء حسابية',
-      owner: 'أحمد محمود الشافعي',
-      dept: 'تقنية المعلومات (IT)',
-      progress: 95,
-      weight: 30,
-      status: 'COMPLETED',
-    },
-    {
-      id: '3',
-      title: 'رفع نسبة الامتثال لبرنامج حماية الأجور (Mudad) إلى 100% شهرياً',
-      owner: 'نورهان طارق المنشاوي',
-      dept: 'المالية (Finance)',
-      progress: 60,
-      weight: 30,
-      status: 'AT_RISK',
-    },
-  ]);
+  const [goals, setGoals] = useState<OKRGoal[]>([]);
 
   const loadGoals = () => {
     api.performance.listGoals()
@@ -83,18 +55,16 @@ export default function PerformancePage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: OKRGoal[] = rawItems.map((g: any) => ({
-            id: g.id,
-            title: g.title,
-            owner: g.employee ? `${g.employee.first_name} ${g.employee.last_name}` : 'موظف',
-            dept: g.employee?.department?.name || 'تقنية المعلومات',
-            progress: g.progress_percentage || 0,
-            weight: 30,
-            status: g.status === 'ACHIEVED' ? 'COMPLETED' : g.status === 'AT_RISK' ? 'AT_RISK' : 'ON_TRACK',
-          }));
-          setGoals(mapped);
-        }
+        const mapped: OKRGoal[] = rawItems.map((g: any) => ({
+          id: g.id,
+          title: g.title,
+          owner: g.employee ? `${g.employee.first_name} ${g.employee.last_name}` : 'موظف',
+          dept: g.employee?.department?.name || 'تقنية المعلومات',
+          progress: g.progress_percentage || 0,
+          weight: 100,
+          status: g.status === 'ACHIEVED' ? 'COMPLETED' : g.status === 'AT_RISK' ? 'AT_RISK' : 'ON_TRACK',
+        }));
+        setGoals(mapped);
       })
       .catch((err) => {
         console.warn('Failed to load performance goals from API:', err);

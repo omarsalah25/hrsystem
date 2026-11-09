@@ -40,73 +40,6 @@ interface EmployeeItem {
   gosiOrId: string;
 }
 
-const sampleEmployees: EmployeeItem[] = [
-  {
-    id: '1',
-    empNo: 'EMP-SA-001',
-    name: 'عبدالله سعد العتيبي',
-    email: 'abdullah@futuregroup.com',
-    phone: '+966 50 123 4567',
-    dept: 'تقنية المعلومات (IT)',
-    role: 'Senior Software Engineer',
-    branch: 'فرع الرياض (Olaya)',
-    flag: '🇸🇦',
-    status: 'ACTIVE',
-    salary: 'SAR 24,000',
-    hireDate: '2023-01-15',
-    attendanceMode: 'بصمة حيوية + محمول (Both)',
-    gosiOrId: 'GOSI: 987654321',
-  },
-  {
-    id: '2',
-    empNo: 'EMP-EG-001',
-    name: 'أحمد محمود الشافعي',
-    email: 'ahmed.elshafey@futuregroup.com',
-    phone: '+20 10 1234 5678',
-    dept: 'تقنية المعلومات (IT)',
-    role: 'Lead Backend Engineer',
-    branch: 'فرع القاهرة (القرية الذكية)',
-    flag: '🇪🇬',
-    status: 'ACTIVE',
-    salary: 'EGP 28,000',
-    hireDate: '2023-05-01',
-    attendanceMode: 'بصمة حيوية فقط (Biometric)',
-    gosiOrId: 'الرقم التأميني: 55443322',
-  },
-  {
-    id: '3',
-    empNo: 'EMP-SA-002',
-    name: 'سارة محمد القحطاني',
-    email: 'sara.qahtani@futuregroup.com',
-    phone: '+966 55 987 6543',
-    dept: 'الموارد البشرية (HR)',
-    role: 'HR Operations Lead',
-    branch: 'فرع الرياض (Olaya)',
-    flag: '🇸🇦',
-    status: 'ACTIVE',
-    salary: 'SAR 19,500',
-    hireDate: '2023-08-10',
-    attendanceMode: 'محمول عبر الموقع الجغرافي (Mobile)',
-    gosiOrId: 'GOSI: 789123456',
-  },
-  {
-    id: '4',
-    empNo: 'EMP-EG-002',
-    name: 'نورهان طارق المنشاوي',
-    email: 'nourhan.t@futuregroup.com',
-    phone: '+20 12 8765 4321',
-    dept: 'الشؤون المالية (Finance)',
-    role: 'Senior Payroll Specialist',
-    branch: 'فرع القاهرة (القرية الذكية)',
-    flag: '🇪🇬',
-    status: 'ON_LEAVE',
-    salary: 'EGP 22,000',
-    hireDate: '2024-02-01',
-    attendanceMode: 'بصمة حيوية + محمول (Both)',
-    gosiOrId: 'الرقم التأميني: 33221199',
-  },
-];
-
 export default function EmployeesPage() {
   const router = useRouter();
   const { t, locale, isRtl } = useTranslation();
@@ -114,7 +47,7 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [activeModalEmployee, setActiveModalEmployee] = useState<EmployeeItem | null>(null);
-  const [employeesList, setEmployeesList] = useState<EmployeeItem[]>(sampleEmployees);
+  const [employeesList, setEmployeesList] = useState<EmployeeItem[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
 
   const fetchEmployees = React.useCallback(() => {
@@ -127,28 +60,26 @@ export default function EmployeesPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: EmployeeItem[] = rawItems.map((e: any) => ({
-            id: e.id,
-            empNo: e.employee_number || 'EMP-000',
-            name: e.full_name || `${e.first_name} ${e.last_name}`,
-            email: e.work_email,
-            phone: e.phone_number || e.profile?.phone || '+966 50 123 4567',
-            dept: e.department?.name || 'تقنية المعلومات',
-            role: e.designation?.title || 'مهندس برمجيات',
-            branch: e.branch?.name || (e.company?.country_code === 'SAU' ? 'فرع الرياض' : 'فرع القاهرة'),
-            flag: e.company?.country_code === 'SAU' ? '🇸🇦' : e.company?.country_code === 'UAE' ? '🇦🇪' : '🇪🇬',
-            status: e.employment_status || 'ACTIVE',
-            salary: `${e.current_salary?.currency || (e.company?.country_code === 'SAU' ? 'SAR' : 'EGP')} ${(Number(e.current_salary?.base_salary || 18000) + Number(e.current_salary?.housing_allowance || 0)).toLocaleString()}`,
-            hireDate: e.hire_date || '2023-01-15',
-            attendanceMode: e.allowed_attendance_mode === 'BOTH' ? 'مزدوج (بصمة + محمول)' : e.allowed_attendance_mode === 'BIOMETRIC_ONLY' ? 'بصمة حيوية' : 'محمول GPS',
-            gosiOrId: e.is_national ? (e.company?.country_code === 'SAU' ? 'مواطن (GOSI نشط)' : 'مواطن (تأمينات نشطة)') : 'مقيم / وافد',
-          }));
-          setEmployeesList(mapped);
-        }
+        const mapped: EmployeeItem[] = rawItems.map((e: any) => ({
+          id: e.id,
+          empNo: e.employee_number || 'EMP-000',
+          name: e.full_name || `${e.first_name} ${e.last_name}`,
+          email: e.work_email,
+          phone: e.phone_number || e.profile?.phone || '+966 50 123 4567',
+          dept: e.department?.name || 'تقنية المعلومات',
+          role: e.designation?.title || 'مهندس برمجيات',
+          branch: e.branch?.name || (e.company?.country_code === 'SAU' ? 'فرع الرياض' : 'فرع القاهرة'),
+          flag: e.company?.country_code === 'SAU' ? '🇸🇦' : e.company?.country_code === 'UAE' ? '🇦🇪' : '🇪🇬',
+          status: e.employment_status || 'ACTIVE',
+          salary: `${e.current_salary?.currency || (e.company?.country_code === 'SAU' ? 'SAR' : 'EGP')} ${(Number(e.current_salary?.base_salary || 18000) + Number(e.current_salary?.housing_allowance || 0) + Number(e.current_salary?.transportation_allowance || 0)).toLocaleString()}`,
+          hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : '2022-03-01',
+          attendanceMode: e.allowed_attendance_mode === 'BOTH' ? 'مزدوج (بصمة + محمول)' : e.allowed_attendance_mode === 'BIOMETRIC_ONLY' ? 'بصمة حيوية' : 'محمول GPS',
+          gosiOrId: e.is_national ? (e.company?.country_code === 'SAU' ? 'مواطن (GOSI نشط)' : 'مواطن (تأمينات نشطة)') : 'مقيم / وافد',
+        }));
+        setEmployeesList(mapped);
       })
       .catch((err) => {
-        console.warn('Could not fetch real employees list, using defaults:', err);
+        console.warn('Could not fetch real employees list:', err);
       })
       .finally(() => {
         setIsLoadingEmployees(false);

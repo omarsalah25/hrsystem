@@ -51,52 +51,7 @@ export default function ShiftsPage() {
     is_ramadan_shift: false,
   });
 
-  const [shifts, setShifts] = useState<Shift[]>([
-    {
-      id: 'S1',
-      nameAr: 'الوردية الصباحية العامة',
-      nameEn: 'General Morning Shift',
-      startTime: '08:00',
-      endTime: '17:00',
-      breakMinutes: 60,
-      totalWorkingHours: 8,
-      color: 'bg-blue-500',
-      isRamadan: false,
-    },
-    {
-      id: 'S2',
-      nameAr: 'وردية شهر رمضان المبارك (مخفضة)',
-      nameEn: 'Ramadan Reduced Shift (6h)',
-      startTime: '09:00',
-      endTime: '15:00',
-      breakMinutes: 0,
-      totalWorkingHours: 6,
-      color: 'bg-emerald-500',
-      isRamadan: true,
-    },
-    {
-      id: 'S3',
-      nameAr: 'وردية المساء والدعم الفني',
-      nameEn: 'Evening & Tech Support Shift',
-      startTime: '16:00',
-      endTime: '00:00',
-      breakMinutes: 45,
-      totalWorkingHours: 7.25,
-      color: 'bg-purple-500',
-      isRamadan: false,
-    },
-    {
-      id: 'S4',
-      nameAr: 'الوردية الليلية (مكتب القاهرة)',
-      nameEn: 'Night Shift (Cairo Office)',
-      startTime: '00:00',
-      endTime: '08:00',
-      breakMinutes: 60,
-      totalWorkingHours: 7,
-      color: 'bg-amber-500',
-      isRamadan: false,
-    },
-  ]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
 
   const loadShifts = () => {
     api.shifts.list()
@@ -107,20 +62,18 @@ export default function ShiftsPage() {
           ? res.data.data
           : [];
 
-        if (rawItems.length > 0) {
-          const mapped: Shift[] = rawItems.map((s: any) => ({
-            id: s.id,
-            nameAr: s.name_ar,
-            nameEn: s.name_en || s.name_ar,
-            startTime: s.start_time || '08:00',
-            endTime: s.end_time || '17:00',
-            breakMinutes: s.break_minutes || 60,
-            totalWorkingHours: s.daily_hours || (s.is_ramadan_shift ? 6 : 8),
-            color: s.is_ramadan_shift ? 'bg-emerald-500' : 'bg-blue-500',
-            isRamadan: Boolean(s.is_ramadan_shift),
-          }));
-          setShifts(mapped);
-        }
+        const mapped: Shift[] = rawItems.map((s: any) => ({
+          id: s.id,
+          nameAr: s.name_ar,
+          nameEn: s.name_en || s.name_ar,
+          startTime: s.start_time || '08:00',
+          endTime: s.end_time || '17:00',
+          breakMinutes: s.break_minutes || 60,
+          totalWorkingHours: s.daily_hours || (s.is_ramadan_shift ? 6 : 8),
+          color: s.is_ramadan_shift ? 'bg-emerald-500' : 'bg-blue-500',
+          isRamadan: Boolean(s.is_ramadan_shift),
+        }));
+        setShifts(mapped);
       })
       .catch((err) => {
         console.warn('Could not fetch shifts from API:', err);
@@ -308,32 +261,12 @@ export default function ShiftsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
               <tr className="hover:bg-slate-50/50">
-                <td className="p-3 font-bold">{isAr ? 'الهندسة والبرمجيات (IT)' : 'Software Engineering'}</td>
+                <td className="p-3 font-bold">{isAr ? 'إدارة تقنية المعلومات والبرمجيات (IT)' : 'Software Engineering'}</td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">08:00 - 17:00</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">08:00 - 17:00</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">08:00 - 17:00</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">08:00 - 17:00</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">08:00 - 17:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px]">عطلة</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px]">عطلة</span></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="p-3 font-bold">{isAr ? 'الدعم الفني ومراكز العمليات' : 'Customer Support & NOC'}</td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold">16:00 - 00:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold">16:00 - 00:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold">16:00 - 00:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold">16:00 - 00:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold">16:00 - 00:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">وردية طوارئ</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px]">عطلة</span></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="p-3 font-bold">{isAr ? 'المبيعات وتطوير الأعمال' : 'Sales & Growth'}</td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">09:00 - 18:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">09:00 - 18:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">09:00 - 18:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">09:00 - 18:00</span></td>
-                <td className="p-3 text-center"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">09:00 - 18:00</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px]">عطلة</span></td>
                 <td className="p-3 text-center"><span className="px-2 py-1 bg-slate-100 text-slate-400 rounded text-[10px]">عطلة</span></td>
               </tr>
