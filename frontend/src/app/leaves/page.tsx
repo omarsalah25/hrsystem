@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
 import {
   CalendarCheck,
@@ -32,6 +33,7 @@ interface LeaveRequestItem {
 export default function LeavesPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -264,22 +266,28 @@ export default function LeavesPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 {req.status === 'PENDING' ? (
-                  <>
-                    <button
-                      onClick={() => handleAction(req.id, 'APPROVED')}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{locale === 'ar' ? 'اعتماد' : 'Approve'}</span>
-                    </button>
-                    <button
-                      onClick={() => handleAction(req.id, 'REJECTED')}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs transition flex items-center gap-1.5"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                      <span>{locale === 'ar' ? 'رفض' : 'Reject'}</span>
-                    </button>
-                  </>
+                  can('approve_leaves') ? (
+                    <>
+                      <button
+                        onClick={() => handleAction(req.id, 'APPROVED')}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{locale === 'ar' ? 'اعتماد' : 'Approve'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleAction(req.id, 'REJECTED')}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl font-bold text-xs transition flex items-center gap-1.5"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>{locale === 'ar' ? 'رفض' : 'Reject'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800">
+                      {locale === 'ar' ? 'قيد المراجعة الإدارية' : 'Pending Approval'}
+                    </span>
+                  )
                 ) : (
                   <span className={`px-3 py-1 rounded-full text-xs font-black ${
                     req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'

@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
 import {
   Users,
@@ -25,6 +27,7 @@ import {
 export default function DashboardPage() {
   const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
+  const { user, roleInfo, can } = usePermissions();
 
   // Simulated state for quick punch
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -143,65 +146,20 @@ export default function DashboardPage() {
   const simResult = computePayrollSim();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-12">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
-              HR
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">
-                {t('system_title')}
-              </h1>
-              <p className="text-xs text-slate-500 hidden sm:block">
-                {t('tagline')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Jurisdiction Badge */}
-            <div className="hidden md:flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>{locale === 'ar' ? 'متوافق مع مصر والسعودية' : 'Egypt & Saudi Compliant'}</span>
-            </div>
-
-            {/* Language Switcher */}
-            <button
-              onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition"
-              title={t('common.switch_lang')}
-            >
-              <Globe2 className="w-4 h-4 text-slate-500" />
-              <span>{locale === 'ar' ? 'English' : 'العربية'}</span>
-            </button>
-
-            {/* User Profile */}
-            <div className="flex items-center gap-2 border-s border-slate-200 ps-4">
-              <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-sm">
-                AS
-              </div>
-              <div className="hidden lg:block text-start">
-                <p className="text-xs font-bold text-slate-800">عبدالله السعيد</p>
-                <p className="text-[10px] text-slate-500">Super Admin (HRIS)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        
+    <DashboardLayout>
+      <div className="text-slate-900 pb-12">
         {/* Quick Punch & Live Device Status Alert */}
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl text-white p-6 shadow-lg mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <span className="inline-block bg-blue-500/40 text-blue-100 text-xs px-2.5 py-1 rounded-full font-medium mb-2">
-                {t('dashboard.welcome')}, د. عبدالله
-              </span>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-block bg-blue-500/40 text-blue-100 text-xs px-2.5 py-1 rounded-full font-medium">
+                  {t('dashboard.welcome')}, {user.name}
+                </span>
+                <span className="inline-block bg-white/15 text-white text-[11px] px-2.5 py-1 rounded-full font-bold">
+                  {locale === 'ar' ? roleInfo.ar : roleInfo.en}
+                </span>
+              </div>
               <h2 className="text-2xl font-black">
                 {t('dashboard.quick_punch')}
               </h2>
@@ -339,12 +297,14 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-base text-slate-900">{t('employees.title')}</h3>
                 <p className="text-xs text-slate-500">سجل الموظفين المعتمد للشركات في الرياض والقاهرة</p>
               </div>
-              <button
-                onClick={() => router.push('/employees/new')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
-              >
-                + {t('employees.add_new')}
-              </button>
+              {can('create_employee') && (
+                <button
+                  onClick={() => router.push('/employees/new')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+                >
+                  + {t('employees.add_new')}
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -520,13 +480,15 @@ export default function DashboardPage() {
                   <Download className="w-4 h-4" />
                   {t('payroll.download_payslip')}
                 </button>
-                <button
-                  onClick={() => api.payroll.exportWps('current')}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  {t('payroll.export_wps')}
-                </button>
+                {can('export_wps') && (
+                  <button
+                    onClick={() => api.payroll.exportWps('current')}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {t('payroll.export_wps')}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -540,12 +502,14 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-base text-slate-900">{t('leaves.title')}</h3>
                 <p className="text-xs text-slate-500">أرصدة الإجازات السنوية والمرضية والطلبات المعلقة</p>
               </div>
-              <button
-                onClick={() => router.push('/leaves/apply')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition"
-              >
-                + {t('leaves.request_leave')}
-              </button>
+              {can('request_leave') && (
+                <button
+                  onClick={() => router.push('/leaves/apply')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition"
+                >
+                  + {t('leaves.request_leave')}
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -570,8 +534,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 

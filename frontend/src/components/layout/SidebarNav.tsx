@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import {
   LayoutDashboard,
   Users,
@@ -28,10 +29,11 @@ import {
 export default function SidebarNav() {
   const pathname = usePathname();
   const { t, locale, isRtl } = useTranslation();
+  const { roleInfo, canAccessRoute } = usePermissions();
 
   const isAr = locale === 'ar';
 
-  const navGroups = [
+  const allNavGroups = [
     {
       groupTitle: isAr ? 'إدارة المنظومة القابضة' : 'Holding Administration',
       items: [
@@ -73,6 +75,13 @@ export default function SidebarNav() {
     },
   ];
 
+  const navGroups = allNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => canAccessRoute(item.href)),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
     <aside className="w-64 bg-white border-e border-slate-200 min-h-screen flex flex-col justify-between shrink-0 shadow-xs">
       <div className="overflow-y-auto max-h-[calc(100vh-80px)]">
@@ -98,6 +107,12 @@ export default function SidebarNav() {
           <div className="flex items-center gap-1.5 mt-1 text-[10px] text-emerald-600 font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>{isAr ? '🇸🇦 فرع الرياض + 🇪🇬 فرع القاهرة' : 'Riyadh & Cairo Branches'}</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200/70 flex items-center justify-between">
+            <span className="text-[9px] text-slate-400 font-bold">{isAr ? 'مستوى الصلاحية:' : 'Active Role:'}</span>
+            <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${roleInfo.badgeClass}`}>
+              {isAr ? roleInfo.ar : roleInfo.en}
+            </span>
           </div>
         </div>
 

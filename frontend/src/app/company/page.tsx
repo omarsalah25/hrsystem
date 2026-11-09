@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   Building2,
@@ -59,6 +60,7 @@ interface BranchData {
 export default function CompanyBranchesPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const isAr = locale === 'ar';
 
   const [companies, setCompanies] = useState<CompanyData[]>([]);
@@ -217,21 +219,25 @@ export default function CompanyBranchesPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowAddCompanyModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>{isAr ? 'إضافة كيان / شركة جديدة' : 'Add Legal Entity'}</span>
-          </button>
+          {can('manage_companies') && (
+            <button
+              onClick={() => setShowAddCompanyModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{isAr ? 'إضافة كيان / شركة جديدة' : 'Add Legal Entity'}</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setShowAddBranchModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{isAr ? 'إضافة فرع / موقع' : 'Add Branch'}</span>
-          </button>
+          {can('manage_branches') && (
+            <button
+              onClick={() => setShowAddBranchModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isAr ? 'إضافة فرع / موقع' : 'Add Branch'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -317,13 +323,15 @@ export default function CompanyBranchesPage() {
             </div>
           ))}
 
-          <button
-            onClick={() => setShowAddBranchModal(true)}
-            className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 rounded-xl text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 transition"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{isAr ? 'إضافة فرع أو موقع عمل جديد' : 'Add New Branch / Site'}</span>
-          </button>
+          {can('manage_branches') && (
+            <button
+              onClick={() => setShowAddBranchModal(true)}
+              className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 rounded-xl text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isAr ? 'إضافة فرع أو موقع عمل جديد' : 'Add New Branch / Site'}</span>
+            </button>
+          )}
         </div>
 
         {/* Branch Geofencing Settings Panel */}
@@ -344,19 +352,23 @@ export default function CompanyBranchesPage() {
                   <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
                   <span>{isAr ? 'نظام التحقق الجغرافي نشط' : 'Active Geofence Radar'}</span>
                 </span>
-                <button
-                  onClick={handleUpdateBranchGeofence}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
-                </button>
-                <button
-                  onClick={() => handleDeleteBranch(selectedBranch.id, selectedBranch.name)}
-                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold shadow-xs transition"
-                >
-                  <span>{isAr ? 'حذف الفرع' : 'Delete'}</span>
-                </button>
+                {can('manage_branches') && (
+                  <>
+                    <button
+                      onClick={handleUpdateBranchGeofence}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs transition"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranch(selectedBranch.id, selectedBranch.name)}
+                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold shadow-xs transition"
+                    >
+                      <span>{isAr ? 'حذف الفرع' : 'Delete'}</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 

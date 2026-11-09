@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   GraduationCap,
@@ -41,6 +42,7 @@ interface Certificate {
 export default function LearningPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const isAr = locale === 'ar';
 
   const [courses, setCourses] = useState<Course[]>([
@@ -179,13 +181,15 @@ export default function LearningPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{isAr ? 'إضافة دورة جديدة' : 'Add Course'}</span>
-        </button>
+        {can('manage_courses') && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAr ? 'إضافة دورة جديدة' : 'Add Course'}</span>
+          </button>
+        )}
       </div>
 
       {feedbackMsg && (

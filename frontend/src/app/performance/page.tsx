@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   Target,
@@ -28,9 +29,10 @@ interface OKRGoal {
 
 export default function PerformancePage() {
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const isAr = locale === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'okrs' | 'ninebox' | 'reviews'>('ninebox');
+  const [activeTab, setActiveTab] = useState<'okrs' | 'ninebox' | 'reviews'>('okrs');
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [newGoal, setNewGoal] = useState({
@@ -138,28 +140,32 @@ export default function PerformancePage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddGoalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{isAr ? 'إضافة هدف جديد (OKR)' : 'New OKR Goal'}</span>
-        </button>
+        {can('manage_okr_goals') && (
+          <button
+            onClick={() => setIsAddGoalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAr ? 'إضافة هدف جديد (OKR)' : 'New OKR Goal'}</span>
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 mb-6 gap-6">
-        <button
-          onClick={() => setActiveTab('ninebox')}
-          className={`pb-3 font-bold text-xs border-b-2 transition flex items-center gap-1.5 ${
-            activeTab === 'ninebox'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Grid3X3 className="w-4 h-4" />
-          <span>{isAr ? 'مصفوفة الكفاءات والنمو (9-Box Grid)' : '9-Box Talent Matrix'}</span>
-        </button>
+        {can('view_9box_matrix') && (
+          <button
+            onClick={() => setActiveTab('ninebox')}
+            className={`pb-3 font-bold text-xs border-b-2 transition flex items-center gap-1.5 ${
+              activeTab === 'ninebox'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Grid3X3 className="w-4 h-4" />
+            <span>{isAr ? 'مصفوفة الكفاءات والنمو (9-Box Grid)' : '9-Box Talent Matrix'}</span>
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('okrs')}
           className={`pb-3 font-bold text-xs border-b-2 transition flex items-center gap-1.5 ${

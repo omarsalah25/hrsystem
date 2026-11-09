@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   Clock,
@@ -18,6 +19,7 @@ import {
 
 export default function AttendancePage() {
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -78,14 +80,16 @@ export default function AttendancePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleReconcile}
-            disabled={isReconciling}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-xs"
-          >
-            <Cpu className={`w-3.5 h-3.5 ${isReconciling ? 'animate-spin' : ''}`} />
-            <span>{locale === 'ar' ? 'تسوية الحركات (Reconcile)' : 'Reconcile Punches'}</span>
-          </button>
+          {can('reconcile_attendance') && (
+            <button
+              onClick={handleReconcile}
+              disabled={isReconciling}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              <Cpu className={`w-3.5 h-3.5 ${isReconciling ? 'animate-spin' : ''}`} />
+              <span>{locale === 'ar' ? 'تسوية الحركات (Reconcile)' : 'Reconcile Punches'}</span>
+            </button>
+          )}
           <button
             onClick={loadAttendanceData}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition shadow-xs"

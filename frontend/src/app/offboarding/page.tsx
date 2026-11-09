@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   UserMinus,
@@ -18,6 +19,7 @@ import {
 
 export default function OffboardingPage() {
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
 
   const [tenureYears, setTenureYears] = useState<number>(4.5);
   const [lastSalary, setLastSalary] = useState<number>(18000);
@@ -341,13 +343,15 @@ export default function OffboardingPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleInitiateSettlement}
-            disabled={submitting}
-            className="w-full mt-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition shadow-sm"
-          >
-            {submitting ? 'جاري الاعتماد...' : 'اعتماد المبلغ في التصفية النهائية (FNF Settlement)'}
-          </button>
+          {can('initiate_offboarding') && (
+            <button
+              onClick={handleInitiateSettlement}
+              disabled={submitting}
+              className="w-full mt-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition shadow-sm"
+            >
+              {submitting ? 'جاري الاعتماد...' : 'اعتماد المبلغ في التصفية النهائية (FNF Settlement)'}
+            </button>
+          )}
         </div>
       </div>
     </DashboardLayout>

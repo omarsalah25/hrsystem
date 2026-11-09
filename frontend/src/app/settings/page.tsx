@@ -242,7 +242,7 @@ export default function SettingsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100">
             <h2 className="font-bold text-sm text-slate-900">مصفوفة الصلاحيات (Role-Based Access Control)</h2>
-            <p className="text-xs text-slate-400 mt-0.5">تحديد مستويات الوصول للأدوار المختلفة في المنظومة</p>
+            <p className="text-xs text-slate-400 mt-0.5">تحديد مستويات الوصول وإخفاء القوائم والأزرار تلقائياً حسب الدور الوظيفي</p>
           </div>
 
           <div className="overflow-x-auto text-xs">
@@ -250,37 +250,61 @@ export default function SettingsPage() {
               <thead className="bg-slate-50 border-b border-slate-100 text-slate-500">
                 <tr>
                   <th className="p-3.5 text-start font-semibold">المورد / الموديول</th>
-                  <th className="p-3.5 text-center font-semibold">مدير النظام (Admin)</th>
-                  <th className="p-3.5 text-center font-semibold">مدير الموارد (HR)</th>
-                  <th className="p-3.5 text-center font-semibold">أخصائي الرواتب</th>
-                  <th className="p-3.5 text-center font-semibold">مدير القسم</th>
-                  <th className="p-3.5 text-center font-semibold">الموظف</th>
+                  <th className="p-3.5 text-center font-semibold">مالك المنظومة (SUPER_ADMIN)</th>
+                  <th className="p-3.5 text-center font-semibold">مدير الموارد (HR_MANAGER)</th>
+                  <th className="p-3.5 text-center font-semibold">مسؤول الرواتب (PAYROLL)</th>
+                  <th className="p-3.5 text-center font-semibold">المراجع الرقابي (AUDITOR)</th>
+                  <th className="p-3.5 text-center font-semibold">الموظف (EMPLOYEE)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-center">
                 <tr>
-                  <td className="p-3.5 text-start font-bold text-slate-800">سجل الموظفين والملفات</td>
-                  <td className="p-3.5 text-emerald-600 font-bold">كامل</td>
-                  <td className="p-3.5 text-emerald-600 font-bold">كامل</td>
-                  <td className="p-3.5 text-slate-400">قراءة فقط</td>
-                  <td className="p-3.5 text-slate-600 font-medium">فريقه فقط</td>
-                  <td className="p-3.5 text-slate-600 font-medium">ملفه فقط</td>
+                  <td className="p-3.5 text-start font-bold text-slate-800">لوحة مالك المنظومة القابضة (/admin)</td>
+                  <td className="p-3.5 text-indigo-600 font-bold">تحكم كامل</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
                 </tr>
                 <tr>
-                  <td className="p-3.5 text-start font-bold text-slate-800">مسير الرواتب والتحويل البنكي</td>
-                  <td className="p-3.5 text-emerald-600 font-bold">كامل</td>
-                  <td className="p-3.5 text-blue-600 font-bold">اعتماد</td>
-                  <td className="p-3.5 text-emerald-600 font-bold">معالجة وحساب</td>
-                  <td className="p-3.5 text-slate-300">--</td>
-                  <td className="p-3.5 text-slate-400">قسيمته فقط</td>
+                  <td className="p-3.5 text-start font-bold text-slate-800">سجل الموظفين والملفات الشاملة (/employees)</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">إضافة / تعديل / إيقاف</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">إضافة / تعديل / إيقاف</td>
+                  <td className="p-3.5 text-blue-600 font-medium">قراءة فقط (بدون تعديل)</td>
+                  <td className="p-3.5 text-amber-700 font-medium">تدقيق قراءة فقط</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي (بوابة ESS فقط)</td>
                 </tr>
                 <tr>
-                  <td className="p-3.5 text-start font-bold text-slate-800">اعتماد طلبات الإجازات</td>
+                  <td className="p-3.5 text-start font-bold text-slate-800">مسير الرواتب وحماية الأجور WPS (/payroll)</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">كامل + اعتماد</td>
+                  <td className="p-3.5 text-blue-600 font-bold">مراجعة وتصدير</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">معالجة واعتماد وصرف</td>
+                  <td className="p-3.5 text-amber-700 font-medium">مراجعة رقابية فقط</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي (قسيمته في ESS)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 text-start font-bold text-slate-800">إدارة الإجازات والاعتمادات (/leaves)</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">كامل + اعتماد</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">اعتماد / رفض</td>
+                  <td className="p-3.5 text-blue-600 font-medium">عرض وتقديم فقط</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-slate-700 font-medium">تقديم طلب فقط (بدون اعتماد)</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 text-start font-bold text-slate-800">التوظيف، الورديات، العهد، والـ 9-Box</td>
                   <td className="p-3.5 text-emerald-600 font-bold">كامل</td>
-                  <td className="p-3.5 text-emerald-600 font-bold">اعتماد نهائي</td>
-                  <td className="p-3.5 text-slate-300">--</td>
-                  <td className="p-3.5 text-blue-600 font-bold">اعتماد أولي</td>
-                  <td className="p-3.5 text-slate-600 font-medium">تقديم طلب</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">كامل</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-slate-600 font-medium">أهدافه ودوراته فقط</td>
+                </tr>
+                <tr>
+                  <td className="p-3.5 text-start font-bold text-slate-800">سجل التدقيق المشفر SHA-256 (/audit)</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">كامل + فحص الهاش</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي (فصل الصلاحيات) 🔒</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
+                  <td className="p-3.5 text-emerald-600 font-bold">فحص الهاش وتصدير السجل</td>
+                  <td className="p-3.5 text-rose-400 font-medium">مخفي 🔒</td>
                 </tr>
               </tbody>
             </table>

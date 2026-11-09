@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import { api } from '@/lib/api';
 import {
   Scale,
@@ -32,6 +33,7 @@ interface GrievanceCase {
 export default function EmployeeRelationsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const isAr = locale === 'ar';
 
   const [cases, setCases] = useState<GrievanceCase[]>([
@@ -179,53 +181,69 @@ export default function EmployeeRelationsPage() {
         </div>
       </div>
 
-      {/* Cases Log */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100">
-          <h2 className="text-sm font-bold text-slate-900">
-            {isAr ? 'سجل الشكاوى والتحقيقات الإدارية النشطة' : 'Active Grievance & Investigation Cases'}
-          </h2>
-        </div>
+      {/* Cases Log (Confidential HR & Ethics Committee Only) */}
+      {can('view_all_grievances') ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="p-4 sm:p-5 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900">
+              {isAr ? 'سجل الشكاوى والتحقيقات الإدارية النشطة' : 'Active Grievance & Investigation Cases'}
+            </h2>
+          </div>
 
-        <div className="divide-y divide-slate-100">
-          {cases.map((c) => (
-            <div key={c.id} className="p-4 sm:p-5 hover:bg-slate-50/70 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-blue-700 text-xs">{c.caseNumber}</span>
-                  <span className="font-bold text-slate-900 text-sm">{c.title}</span>
-                  {c.isAnonymous && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-black rounded-full">
-                      <EyeOff className="w-3 h-3" />
-                      <span>إبلاغ سري</span>
-                    </span>
+          <div className="divide-y divide-slate-100">
+            {cases.map((c) => (
+              <div key={c.id} className="p-4 sm:p-5 hover:bg-slate-50/70 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-blue-700 text-xs">{c.caseNumber}</span>
+                    <span className="font-bold text-slate-900 text-sm">{c.title}</span>
+                    {c.isAnonymous && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-black rounded-full">
+                        <EyeOff className="w-3 h-3" />
+                        <span>إبلاغ سري</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-4">
+                    <span>التصنيف: <strong className="text-slate-700">{c.category}</strong></span>
+                    <span>المحقق المكلف: <strong className="text-slate-700">{c.assignedInvestigator}</strong></span>
+                    <span>تاريخ التقديم: {c.dateFiled}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                    c.status === 'INVESTIGATING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {c.status === 'INVESTIGATING' ? 'قيد التحقيق وسماع الأقوال' : 'تم إعداد التقرير والحل'}
+                  </span>
+                  {can('manage_grievances') && (
+                    <button
+                      onClick={() => router.push(`/employee-relations/${c.id}`)}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold rounded-xl transition"
+                    >
+                      فتح ملف التحقيق
+                    </button>
                   )}
                 </div>
-
-                <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-4">
-                  <span>التصنيف: <strong className="text-slate-700">{c.category}</strong></span>
-                  <span>المحقق المكلف: <strong className="text-slate-700">{c.assignedInvestigator}</strong></span>
-                  <span>تاريخ التقديم: {c.dateFiled}</span>
-                </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                  c.status === 'INVESTIGATING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                }`}>
-                  {c.status === 'INVESTIGATING' ? 'قيد التحقيق وسماع الأقوال' : 'تم إعداد التقرير والحل'}
-                </span>
-                <button
-                  onClick={() => router.push(`/employee-relations/${c.id}`)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold rounded-xl transition"
-                >
-                  فتح ملف التحقيق
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center space-y-2 shadow-xs">
+          <EyeOff className="w-8 h-8 text-purple-600 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-900">
+            {isAr ? 'حماية سرية البلاغات والشكاوى الشخصية' : 'Confidential Whistleblower Protection Active'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-xl mx-auto">
+            {isAr
+              ? 'حفاظاً على الخصوصية التامة، لا يتم عرض شكاوى الموظفين الآخرين. يمكنك تقديم بلاغ سري أو شكوى جديدة عبر الزر أعلاه ليتم توجيهها مباشرة إلى لجنة الحوكمة المختصة.'
+              : 'To protect employee confidentiality, other employees’ grievance records are hidden. Use the Report Grievance button above to submit a private case.'}
+          </p>
+        </div>
+      )}
 
       {/* Create Grievance Modal */}
       {showCreateModal && (

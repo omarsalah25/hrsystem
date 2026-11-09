@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
 import {
   Banknote,
@@ -40,6 +41,7 @@ interface PayslipPreviewData {
 export default function PayrollPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const { can } = usePermissions();
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipPreviewData | null>(null);
   const [payrollRuns, setPayrollRuns] = useState<any[]>([]);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -171,21 +173,25 @@ export default function PayrollPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleExportWps}
-            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>{locale === 'ar' ? 'تصدير ملف حماية الأجور (WPS)' : 'Export WPS SIF'}</span>
-          </button>
-          <button
-            onClick={handleApproveRun}
-            disabled={approving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{locale === 'ar' ? 'اعتماد وصرف المسير' : 'Approve & Disburse'}</span>
-          </button>
+          {(can('export_wps') || can('run_payroll')) && (
+            <button
+              onClick={handleExportWps}
+              className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>{locale === 'ar' ? 'تصدير ملف حماية الأجور (WPS)' : 'Export WPS SIF'}</span>
+            </button>
+          )}
+          {can('approve_payroll') && (
+            <button
+              onClick={handleApproveRun}
+              disabled={approving}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{locale === 'ar' ? 'اعتماد وصرف المسير' : 'Approve & Disburse'}</span>
+            </button>
+          )}
         </div>
       </div>
 

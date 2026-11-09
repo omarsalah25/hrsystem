@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
 import {
   Building2,
@@ -33,6 +34,7 @@ import {
 export default function PlatformAdminDashboardPage() {
   const router = useRouter();
   const { t, locale, setLocale, isRtl } = useTranslation();
+  const { mounted, roleInfo, homeRoute, can } = usePermissions();
   const isAr = locale === 'ar';
 
   const [isLoading, setIsLoading] = useState(true);
@@ -128,6 +130,35 @@ export default function PlatformAdminDashboardPage() {
       c.cr_number?.includes(searchQuery);
     return matchesCountry && matchesSearch;
   });
+
+  if (mounted && !can('view_platform_admin')) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-slate-900 border border-rose-500/30 rounded-2xl p-8 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg font-black text-white">
+            {isAr ? 'لوحة مالك النظام مقيدة (SUPER_ADMIN Only)' : 'Platform Owner Cockpit Restricted'}
+          </h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            {isAr
+              ? `حسابك الحالي (${roleInfo.ar}) لا يملك صلاحية إدارة المنظومة القابضة (Platform Owner).`
+              : `Your current role (${roleInfo.en}) is not authorized to access the Platform Owner Holding Cockpit.`}
+          </p>
+          <div className="pt-2">
+            <Link
+              href={homeRoute}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition"
+            >
+              <span>{isAr ? 'العودة إلى لوحة العمل المخصصة لك' : 'Return to Your Workspace'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-600 selection:text-white">

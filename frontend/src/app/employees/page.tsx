@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTranslation } from '@/lib/translations';
+import { usePermissions } from '@/lib/permissions';
 import api from '@/lib/api';
 import {
   Users,
@@ -108,6 +109,7 @@ const sampleEmployees: EmployeeItem[] = [
 export default function EmployeesPage() {
   const router = useRouter();
   const { t, locale, isRtl } = useTranslation();
+  const { can } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [activeModalEmployee, setActiveModalEmployee] = useState<EmployeeItem | null>(null);
@@ -222,13 +224,15 @@ export default function EmployeesPage() {
             <Download className="w-3.5 h-3.5" />
             <span>{locale === 'ar' ? 'تصدير Excel' : 'Export Excel'}</span>
           </button>
-          <button
-            onClick={() => router.push('/employees/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{locale === 'ar' ? 'إضافة موظف جديد' : 'Add Employee'}</span>
-          </button>
+          {can('create_employee') && (
+            <button
+              onClick={() => router.push('/employees/new')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{locale === 'ar' ? 'إضافة موظف جديد' : 'Add Employee'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -317,13 +321,15 @@ export default function EmployeesPage() {
                       >
                         {locale === 'ar' ? 'عرض' : 'View'}
                       </button>
-                      <button 
-                        onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                        className="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-bold text-[11px] transition"
-                        title={locale === 'ar' ? 'إنهاء الخدمة' : 'Offboard'}
-                      >
-                        {locale === 'ar' ? 'إيقاف' : 'Offboard'}
-                      </button>
+                      {can('terminate_employee') && (
+                        <button 
+                          onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                          className="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-bold text-[11px] transition"
+                          title={locale === 'ar' ? 'إنهاء الخدمة' : 'Offboard'}
+                        >
+                          {locale === 'ar' ? 'إيقاف' : 'Offboard'}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -388,18 +394,22 @@ export default function EmployeesPage() {
 
             <div className="flex justify-between items-center pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => router.push(`/employees/${activeModalEmployee.id}`)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-                >
-                  {locale === 'ar' ? 'الانتقال إلى الملف الشامل 360°' : 'Go to Full 360° Profile'}
-                </button>
-                <button
-                  onClick={() => handleDeleteEmployee(activeModalEmployee.id, activeModalEmployee.name)}
-                  className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold transition"
-                >
-                  {locale === 'ar' ? 'إنهاء الخدمة / إيقاف' : 'Deactivate / Offboard'}
-                </button>
+                {can('edit_employee') && (
+                  <button
+                    onClick={() => router.push(`/employees/${activeModalEmployee.id}`)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    {locale === 'ar' ? 'الانتقال إلى الملف الشامل 360°' : 'Go to Full 360° Profile'}
+                  </button>
+                )}
+                {can('terminate_employee') && (
+                  <button
+                    onClick={() => handleDeleteEmployee(activeModalEmployee.id, activeModalEmployee.name)}
+                    className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold transition"
+                  >
+                    {locale === 'ar' ? 'إنهاء الخدمة / إيقاف' : 'Deactivate / Offboard'}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setActiveModalEmployee(null)}
