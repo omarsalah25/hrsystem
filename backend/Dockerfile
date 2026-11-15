@@ -13,8 +13,8 @@ RUN apk add --no-cache \
     linux-headers \
     $PHPIZE_DEPS
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache
+# Install PHP extensions in parallel (mbstring is already built into php:8.3-fpm-alpine)
+RUN docker-php-ext-install -j$(nproc) pdo_mysql exif pcntl bcmath gd zip opcache
 
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis

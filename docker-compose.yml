@@ -119,10 +119,10 @@ services:
     expose:
       - "3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRootSecretHr2026!"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=tcp", "-u", "root", "-pRootSecretHr2026!"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 15
     networks:
       - hrsystem_net
 
